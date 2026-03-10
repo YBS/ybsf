@@ -1,0 +1,30 @@
+{
+  "name": "ybsf",
+  "version": "0.1.0",
+  "description": "Yellow Brick Systems Salesforce metadata CLI",
+  "bin": {
+    "ybsf": "./cmd/ybsf.js"
+  },
+  "scripts": {
+    "ybsf": "node ./cmd/ybsf.js",
+    "start": "node ./cmd/ybsf.js",
+    "test": "node --test test/**/*.test.js"
+  },
+  "dependencies": {
+    "@xmldom/xmldom": "^0.8.11",
+    "ajv": "^8.17.1",
+    "xml-formatter": "^3.6.7"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yellowbricksystems/ybsf.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yellowbricksystems/ybsf/issues"
+  },
+  "homepage": "https://github.com/yellowbricksystems/ybsf#readme"
+}

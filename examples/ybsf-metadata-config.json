@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "apiVersion": "66.0",
+  "metadataTypes": [],
+  "installedPackages": {
+    "includeManagedPackages": false,
+    "includeUnlockedPackages": false,
+    "namespaces": []
+  },
+  "transform": {
+    "userPermissionsPolicy": {
+      "mode": "all",
+      "members": []
+    },
+    "excludeStandardFields": [],
+    "includePseudoObjects": [
+      "CaseClose",
+      "CaseComment",
+      "CaseInteraction",
+      "Global"
+    ]
+  }
+}

@@ -1,0 +1,458 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yellowbricksystems.com/schemas/sf-metadata-config.schema.json",
+  "title": "Salesforce Metadata Tool Config",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "apiVersion",
+    "metadataTypes",
+    "packageRules",
+    "processingRules"
+  ],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1
+    },
+    "apiVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+$"
+    },
+    "metadataTypes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/MetadataTypeRule"
+      }
+    },
+    "packageRules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "includeManagedPackages",
+        "includeUnlockedPackages",
+        "namespaces"
+      ],
+      "properties": {
+        "includeManagedPackages": {
+          "type": "boolean"
+        },
+        "includeUnlockedPackages": {
+          "type": "boolean"
+        },
+        "namespaces": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/InstalledNamespaceRule"
+          }
+        }
+      }
+    },
+    "processingRules": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "userPermissionsPolicy": {
+          "$ref": "#/$defs/MemberPolicy"
+        },
+        "excludeStandardFields": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "includePseudoObjects": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "optionalProcessing": {
+          "$ref": "#/$defs/OptionalProcessing"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "MetadataTypeRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "metadataType",
+        "enabled"
+      ],
+      "properties": {
+        "metadataType": {
+          "type": "string",
+          "minLength": 1
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "memberPolicy": {
+          "$ref": "#/$defs/MemberPolicy"
+        },
+        "folderPolicy": {
+          "$ref": "#/$defs/FolderPolicy"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "memberPolicy": {
+                "properties": {
+                  "mode": {
+                    "const": "all"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "memberPolicy": {
+                "properties": {
+                  "members": {
+                    "maxItems": 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "metadataType": {
+                "enum": [
+                  "Report",
+                  "Dashboard",
+                  "Document",
+                  "EmailTemplate"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "folderPolicy"
+            ],
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "folderPolicy": {
+                      "properties": {
+                        "mode": {
+                          "const": "memberPolicy"
+                        }
+                      }
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "memberPolicy"
+                  ]
+                },
+                "else": {
+                  "not": {
+                    "required": [
+                      "memberPolicy"
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "else": {
+            "allOf": [
+              {
+                "required": [
+                  "memberPolicy"
+                ]
+              },
+              {
+                "not": {
+                  "required": [
+                    "folderPolicy"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "MemberPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "members"
+      ],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "all",
+            "include",
+            "exclude"
+          ]
+        },
+        "members": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "FolderPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "folders"
+      ],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "memberPolicy",
+            "all",
+            "include",
+            "exclude"
+          ]
+        },
+        "folders": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FolderRule"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "enum": [
+                  "exclude"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "folders"
+            ],
+            "properties": {
+              "folders": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "const": "exclude"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "folders": {
+                "items": {
+                  "allOf": [
+                    {
+                      "if": {
+                        "type": "object"
+                      },
+                      "then": {
+                        "not": {
+                          "required": [
+                            "memberPolicy"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "FolderRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "folder"
+      ],
+      "properties": {
+        "folder": {
+          "type": "string",
+          "minLength": 1
+        },
+        "memberPolicy": {
+          "$ref": "#/$defs/MemberPolicy"
+        }
+      }
+    },
+    "InstalledNamespaceRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "namespace",
+        "metadataTypes"
+      ],
+      "properties": {
+        "namespace": {
+          "type": "string",
+          "minLength": 1
+        },
+        "metadataTypes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/InstalledTypeRule"
+          }
+        }
+      }
+    },
+    "InstalledTypeRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "metadataType"
+      ],
+      "properties": {
+        "metadataType": {
+          "type": "string",
+          "minLength": 1
+        },
+        "memberPolicy": {
+          "$ref": "#/$defs/MemberPolicy"
+        },
+        "folderPolicy": {
+          "$ref": "#/$defs/FolderPolicy"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "metadataType": {
+                "enum": [
+                  "Report",
+                  "Dashboard",
+                  "Document",
+                  "EmailTemplate"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": ["folderPolicy"],
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "folderPolicy": {
+                      "properties": {
+                        "mode": {
+                          "const": "memberPolicy"
+                        }
+                      }
+                    }
+                  }
+                },
+                "then": {
+                  "required": ["memberPolicy"]
+                },
+                "else": {
+                  "not": {
+                    "required": ["memberPolicy"]
+                  }
+                }
+              }
+            ]
+          },
+          "else": {
+            "allOf": [
+              {
+                "required": ["memberPolicy"]
+              },
+              {
+                "not": {
+                  "required": ["folderPolicy"]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "memberPolicy": {
+                "properties": {
+                  "mode": {
+                    "const": "all"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "memberPolicy": {
+                "properties": {
+                  "members": {
+                    "maxItems": 0
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "OptionalProcessing": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "removeSiteUserDomains": {
+          "type": "boolean"
+        },
+        "removeProfileInactiveComponents": {
+          "type": "boolean"
+        },
+        "sortObjectActionOverrides": {
+          "type": "boolean"
+        },
+        "sortApplicationOverrides": {
+          "type": "boolean"
+        },
+        "sortLayoutPlatformActionListItems": {
+          "type": "boolean"
+        },
+        "sortGlobalValueSetInactiveValues": {
+          "type": "boolean"
+        },
+        "sortWorkflowTimeTriggers": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

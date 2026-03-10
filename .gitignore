@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Local runtime artifacts
+tmp/
+.sf/
+.sfdx/
+.localdevserver/
+deploy-options.json
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+*.code-workspace

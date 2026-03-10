@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="260" viewBox="0 0 1200 260" role="img" aria-labelledby="title desc">
+<title id="title">All Metadata and Tracked Metadata diagram</title>
+<desc id="desc">Compact monochrome nested rectangles for README display.</desc>
+
+<style>
+.label {
+  font-family: Inter, "Source Sans 3", Roboto, "Helvetica Neue", Arial, sans-serif;
+  fill: #111827;
+  text-anchor: middle;
+}
+.outer-label {
+  font-size: 34px;
+  font-weight: 600;
+}
+.inner-label {
+  font-size: 34px;
+  font-weight: 600;
+}
+</style>
+
+<rect x="40" y="40" width="1120" height="180" rx="10" ry="10" fill="#F3F4F6" stroke="#374151" stroke-width="3"/>
+<rect x="340" y="105" width="520" height="90" rx="8" ry="8" fill="#E5E7EB" stroke="#374151" stroke-width="3"/>
+
+<text x="600" y="80" class="label outer-label">All Metadata</text>
+<text x="600" y="160" class="label inner-label">Tracked Metadata</text>
+</svg>
