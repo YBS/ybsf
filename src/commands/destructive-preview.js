@@ -25,6 +25,7 @@ async function runDestructivePreview({ configPath, targetOrg, status, debug = fa
       runDir: debug ? prepared.runDir : null,
       debugPath: debug ? prepared.debugPath : null,
       destructivePath: prepared.destructivePath,
+      destructiveManifestXml: prepared.destructiveManifestXml,
       destructiveCount: prepared.destructiveCount,
       destructiveTypeCount: prepared.destructiveByType.size,
       warnings: prepared.warnings,

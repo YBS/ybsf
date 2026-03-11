@@ -7,6 +7,8 @@ runCli(process.argv.slice(2))
     process.exitCode = code;
   })
   .catch((err) => {
-    console.error(err && err.message ? err.message : String(err));
+    if (!(err && err.alreadyReported)) {
+      console.error(err && err.message ? err.message : String(err));
+    }
     process.exitCode = 1;
   });

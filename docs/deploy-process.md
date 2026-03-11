@@ -21,7 +21,8 @@ Before deployment, `ybsf` shows the target alias, username, environment, endpoin
 
 If destructive candidates exist:
 - interactive terminal:
-  - `ybsf` prompts whether to include destructive changes in this run
+  - `ybsf` first prints the generated `destructiveChanges.xml` contents
+  - then it prompts whether to include destructive changes in this run
 - non-interactive terminal:
   - destructive changes are skipped unless `--apply-destructive` is provided
 
@@ -33,6 +34,18 @@ ybsf deploy --target-org <org-alias> --apply-destructive
 ```
 
 This does not skip the target-org confirmation prompt in an interactive terminal.
+
+## End-Of-Run Status Summary
+After the deploy command finishes, `ybsf` calls `sf project deploy report --job-id <deploy-id> --target-org <org-alias> --json` and prints a structured summary.
+
+That summary includes:
+- final deploy status on its own highlighted line
+- deploy id
+- component counts
+- test counts
+- warnings, if any
+- component failures or test failures, if any
+- aggregate Apex coverage when coverage data is returned
 
 ## Test Run Controls
 - `--test-level` supports:
@@ -56,6 +69,8 @@ ybsf deploy --target-org <org-alias> --test-level RunSpecifiedTests --tests Acco
 
 ## `--debug` Troubleshooting
 Add `--debug` to preserve both the preflight target-org lookup and deploy-preparation artifacts under `tmp/`.
+
+`--debug` is not required to see the destructive manifest contents or the final deployment report summary in the console. It is only needed when you want to inspect the underlying artifact files on disk afterward.
 
 Example:
 ```bash

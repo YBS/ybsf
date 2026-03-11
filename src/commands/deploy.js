@@ -5,6 +5,7 @@ const { prepareDeploy, runSfCommand } = require("../deploy/prepare-deploy");
 const { confirmTargetOrg, resolveApplyDestructive } = require("./helpers/interactive");
 const { fetchTargetOrgDetails } = require("./helpers/target-org");
 const { resolveDeployTestOptions } = require("./helpers/deploy-test-options");
+const { parseDeployIdFromText, summarizeDeployReport } = require("./helpers/deploy-report");
 const { createRunArtifactsDir, cleanupRunArtifactsDir } = require("./helpers/run-artifacts");
 
 function isRenderableComponentsLine(line) {
@@ -30,6 +31,21 @@ function formatRunningTestsLine(successfulLine) {
     return text;
   }
   return `Running Tests: ${match[1]}`;
+}
+
+function emitDestructiveManifestPreview(step, prepared) {
+  if (typeof step !== "function" || !prepared || !prepared.destructivePath) {
+    return;
+  }
+  step(`Destructive manifest: ${prepared.destructivePath}`);
+  const xml = String(prepared.destructiveManifestXml || "").trim();
+  if (!xml) {
+    return;
+  }
+  step("Destructive manifest contents:");
+  for (const line of xml.split(/\r?\n/)) {
+    step(line);
+  }
 }
 
 async function runDeploy({ configPath, targetOrg, applyDestructive, testLevel, tests, status, debug = false }) {
@@ -89,6 +105,7 @@ async function runDeploy({ configPath, targetOrg, applyDestructive, testLevel, t
 
   let includeDestructive = false;
   if (prepared.destructivePath) {
+    emitDestructiveManifestPreview(step, prepared);
     includeDestructive = await resolveApplyDestructive({
       explicitApplyDestructive: Boolean(applyDestructive),
       destructiveCount: prepared.destructiveCount,
@@ -112,6 +129,7 @@ async function runDeploy({ configPath, targetOrg, applyDestructive, testLevel, t
   let currentTests = "";
   let currentSuccessful = "";
   let currentFailed = "";
+  let deployResult = null;
   const currentProgressLine = () => {
     if (currentSuccessful || currentFailed || currentTests) {
       const runningTests = currentSuccessful ? formatRunningTestsLine(currentSuccessful) : "";
@@ -134,7 +152,7 @@ async function runDeploy({ configPath, targetOrg, applyDestructive, testLevel, t
     }
   }, 15_000);
   try {
-    await runSfCommand({
+    deployResult = await runSfCommand({
       cmdArgs,
       cwd: process.cwd(),
       artifactsDir: prepared.runDir,
@@ -189,8 +207,35 @@ async function runDeploy({ configPath, targetOrg, applyDestructive, testLevel, t
     step(`Deploy time: ${formatDuration(Date.now() - deployStartedAt)}`);
     step(`Total time: ${formatDuration(Date.now() - startedAt)}`);
   }
+  const deployRawOutput = `${deployResult && deployResult.stdout ? deployResult.stdout : ""}\n${
+    deployError && deployError.stdout ? deployError.stdout : ""
+  }\n${deployError && deployError.stderr ? deployError.stderr : ""}`;
+  const deployId = parseDeployIdFromText(deployRawOutput);
+  let deployReportSummary = null;
+  if (deployId) {
+    step(`Getting deployment status (${deployId})`);
+    const reportResult = await runSfCommand({
+      cmdArgs: ["project", "deploy", "report", "--job-id", deployId, "--target-org", prepared.targetOrg, "--json"],
+      cwd: process.cwd(),
+      artifactsDir: prepared.runDir,
+      artifactBaseName: "project-deploy-report",
+      streamLiveOutput: false,
+    });
+    deployReportSummary = summarizeDeployReport(JSON.parse(reportResult.stdout || "{}"));
+    for (const line of deployReportSummary.lines) {
+      step(line);
+    }
+  } else {
+    step("Getting deployment status skipped because the deploy ID could not be determined.");
+  }
   if (deployError) {
-    throw deployError;
+    const error = new Error(
+      deployReportSummary && deployReportSummary.errorMessage
+        ? deployReportSummary.errorMessage
+        : deployError.message
+    );
+    error.alreadyReported = Boolean(deployReportSummary);
+    throw error;
   }
 
     return {
@@ -199,10 +244,14 @@ async function runDeploy({ configPath, targetOrg, applyDestructive, testLevel, t
       runDir: debug ? prepared.runDir : null,
       debugPath: debug ? prepared.debugPath : null,
       desiredManifestPath: prepared.desiredManifestPath,
-      destructivePath: includeDestructive ? prepared.destructivePath : null,
+      destructivePath: prepared.destructivePath,
+      destructiveApplied: includeDestructive,
+      destructiveManifestXml: prepared.destructiveManifestXml,
       destructiveCount: prepared.destructiveCount,
       testLevel: testOptions.testLevel,
       tests: testOptions.tests,
+      deployId,
+      deployReport: deployReportSummary,
       warnings: prepared.warnings,
     };
   } finally {

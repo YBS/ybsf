@@ -161,6 +161,15 @@ function printWarnings(warnings, debug) {
   }
 }
 
+function printDestructiveManifest(xml) {
+  const text = String(xml || "").trim();
+  if (!text) {
+    return;
+  }
+  console.log("Destructive manifest contents:");
+  console.log(text);
+}
+
 async function runCli(args) {
   if (!args || args.length === 0) {
     printUsage();
@@ -347,6 +356,7 @@ async function runCli(args) {
     console.log(`Destructive types: ${result.destructiveTypeCount}`);
     if (result.destructivePath) {
       console.log(`Destructive manifest: ${result.destructivePath}`);
+      printDestructiveManifest(result.destructiveManifestXml);
     } else {
       console.log("Destructive manifest: none");
     }
@@ -379,6 +389,7 @@ async function runCli(args) {
     }
     if (result.destructivePath) {
       console.log(`Destructive manifest: ${result.destructivePath}`);
+      console.log(`Destructive applied: ${result.destructiveApplied ? "true" : "false"}`);
     } else {
       console.log("Destructive manifest: none");
     }
@@ -411,6 +422,7 @@ async function runCli(args) {
     }
     if (result.destructivePath) {
       console.log(`Destructive manifest: ${result.destructivePath}`);
+      console.log(`Destructive applied: ${result.destructiveApplied ? "true" : "false"}`);
     } else {
       console.log("Destructive manifest: none");
     }

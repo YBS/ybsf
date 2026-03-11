@@ -159,11 +159,16 @@ async function runSfCommand({ cmdArgs, cwd, artifactsDir, artifactBaseName, stre
   if (result.status !== 0) {
     const stderrMessage = (stderr || "").trim();
     const signalMessage = result.signal ? ` (signal ${result.signal})` : "";
-    throw new Error(
+    const error = new Error(
       stderrMessage.length > 0
         ? stderrMessage
         : `sf command failed with status ${result.status}${signalMessage}`
     );
+    error.stdout = stdout || "";
+    error.stderr = stderr || "";
+    error.status = result.status;
+    error.signal = result.signal;
+    throw error;
   }
 
   return {
@@ -269,6 +274,10 @@ async function prepareDeploy({
     (sum, members) => sum + members.size,
     0
   );
+  const destructiveManifestXml =
+    destructiveByType.size > 0 && fs.existsSync(destructivePath)
+      ? fs.readFileSync(destructivePath, "utf8")
+      : null;
   const debugPath = path.join(runDir, "deploy-prepare-debug.json");
   fs.writeFileSync(
     debugPath,
@@ -300,6 +309,7 @@ async function prepareDeploy({
       desiredManifestPath: resolvedDesiredManifestPath,
       orgPackagePath,
       destructivePath: destructiveByType.size > 0 ? destructivePath : null,
+      destructiveManifestXml,
       destructiveCount,
       destructiveByType,
       nonDeletableRecordTypes,

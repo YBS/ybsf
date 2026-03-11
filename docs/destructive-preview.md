@@ -18,6 +18,11 @@ Anything present in the target-org-scoped manifest but missing from the committe
 ybsf destructive-preview --target-org <org-alias>
 ```
 
+When destructive candidates exist, the command prints:
+- the destructive candidate counts
+- the path to the generated `destructiveChanges.xml`
+- the actual XML contents of that destructive manifest
+
 ## When To Use It
 - Before `validate-deploy`
 - Before `deploy`
@@ -25,6 +30,8 @@ ybsf destructive-preview --target-org <org-alias>
 
 ## `--debug` Troubleshooting
 Add `--debug` to keep the destructive comparison artifacts under `tmp/`.
+
+`--debug` is not required to see the destructive XML in the console. It is only needed when you want to inspect the generated files under `tmp/` after the command exits.
 
 Example:
 ```bash

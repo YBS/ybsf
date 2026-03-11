@@ -41,12 +41,27 @@ ybsf validate-deploy --target-org <org-alias> --test-level RunSpecifiedTests --t
 
 ## Destructive Behavior
 - interactive terminal:
-  - you are prompted to include destructive changes unless `--apply-destructive` is already set
+  - `ybsf` first prints the generated `destructiveChanges.xml` contents
+  - then you are prompted to include destructive changes unless `--apply-destructive` is already set
 - non-interactive terminal:
   - destructive changes are skipped unless `--apply-destructive` is set
 
+## End-Of-Run Status Summary
+After validation finishes, `ybsf` calls `sf project deploy report --job-id <deploy-id> --target-org <org-alias> --json` and prints a structured summary.
+
+That summary includes:
+- final validation status on its own highlighted line
+- deploy id
+- component counts
+- test counts
+- warnings, if any
+- component failures or test failures, if any
+- aggregate Apex coverage when coverage data is returned
+
 ## `--debug` Troubleshooting
 Add `--debug` to preserve both the preflight target-org lookup artifacts and the deploy preparation artifacts under `tmp/`.
+
+`--debug` is not required to see the destructive manifest contents or the final validation report summary in the console. It is only needed when you want to inspect the artifact files on disk afterward.
 
 Example:
 ```bash
