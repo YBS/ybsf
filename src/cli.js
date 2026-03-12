@@ -10,7 +10,7 @@ const { runDestructivePreview } = require("./commands/destructive-preview");
 const { runValidateDeploy } = require("./commands/validate-deploy");
 const { runDeploy } = require("./commands/deploy");
 const { runDocument } = require("./commands/document");
-const { COMMANDS } = require("./command-registry");
+const { COMMANDS, getCommand } = require("./command-registry");
 const { DEFAULT_API_VERSION } = require("./constants");
 
 const COMMAND_SHORT_FLAG_ALIASES = {
@@ -69,10 +69,47 @@ function printUsage() {
 
 Usage:
   ybsf <command> [options]
+  ybsf <command> --help
+  ybsf help [command]
 
 Commands:
 ${commandLines.join("\n")}
 `);
+}
+
+function formatFlagLine(flag) {
+  const names = [flag.long, flag.short].filter(Boolean).join(", ");
+  return `  ${names.padEnd(36)}${flag.description}`;
+}
+
+function printCommandUsage(commandName) {
+  const command = getCommand(commandName);
+  if (!command) {
+    throw new Error(`Unknown command: ${commandName}`);
+  }
+
+  const lines = [
+    `ybsf ${command.name} - ${command.description}`,
+    "",
+    "Usage:",
+    `  ${command.usage || `ybsf ${command.name}`}`,
+  ];
+
+  if (Array.isArray(command.notes) && command.notes.length > 0) {
+    lines.push("", "Notes:");
+    for (const note of command.notes) {
+      lines.push(`  ${note}`);
+    }
+  }
+
+  if (Array.isArray(command.flagDetails) && command.flagDetails.length > 0) {
+    lines.push("", "Options:");
+    for (const flag of command.flagDetails) {
+      lines.push(formatFlagLine(flag));
+    }
+  }
+
+  console.log(lines.join("\n"));
 }
 
 function printVersion() {
@@ -182,7 +219,15 @@ async function runCli(args) {
     return 0;
   }
   if (command === "help" || command === "--help" || command === "-h") {
-    printUsage();
+    if (rest[0]) {
+      printCommandUsage(rest[0]);
+    } else {
+      printUsage();
+    }
+    return 0;
+  }
+  if (rest.includes("--help") || rest.includes("-h")) {
+    printCommandUsage(command);
     return 0;
   }
 

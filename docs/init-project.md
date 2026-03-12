@@ -14,6 +14,8 @@ Use `init-project` to turn a repository into a `ybsf` workspace. It creates the 
 ybsf init-project [--api-version 66.0] [--target-org <org-alias>] [--force] [--includeManagedPackages] [--includeUnlockedPackages]
 ```
 
+For full command help, run `ybsf init-project --help` or `ybsf help init-project`.
+
 ## Common Uses
 Initialize a new repo:
 ```bash

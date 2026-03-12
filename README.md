@@ -26,9 +26,17 @@ After `npm link`, run from any directory:
 ybsf <command> [options]
 ```
 
+For full help on one command, run `ybsf <command> --help` or `ybsf help <command>`.
+
 Show CLI version:
 ```bash
 ybsf --version
+```
+
+Show detailed help for one command:
+```bash
+ybsf deploy --help
+ybsf help deploy
 ```
 
 Typical workflow:

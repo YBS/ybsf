@@ -7,6 +7,8 @@ Use `convert-config` when you already have legacy metadata selection inputs and 
 ybsf convert-config [--input-dir <path>] [--output-dir <path>] [--target-org <org-alias>] [--api-version <N.N>] [--force] [--includeManagedPackages] [--includeUnlockedPackages]
 ```
 
+For full command help, run `ybsf convert-config --help` or `ybsf help convert-config`.
+
 ## Inputs
 - `salesforce.properties` is required
 - `includePackage.xml` is optional

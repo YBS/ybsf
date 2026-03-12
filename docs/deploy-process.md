@@ -7,6 +7,8 @@
 ybsf deploy --config ybsf-metadata-config.json --target-org <org-alias> [--apply-destructive] [--test-level <level>] [--tests <comma-separated-test-names>]
 ```
 
+For full command help, run `ybsf deploy --help` or `ybsf help deploy`.
+
 ## How Destructive Changes Are Identified
 1. Load the committed `manifest/package.xml`.
 2. Generate a target-org-scoped manifest from the current config and target org.

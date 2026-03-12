@@ -7,6 +7,8 @@ Use `validate-deploy` for a check-only deployment using the committed manifest. 
 ybsf validate-deploy --config ybsf-metadata-config.json --target-org <org-alias> [--apply-destructive] [--test-level <level>] [--tests <comma-separated-test-names>]
 ```
 
+For full command help, run `ybsf validate-deploy --help` or `ybsf help validate-deploy`.
+
 ## What It Does
 - confirms the target org details before running
 - uses committed `manifest/package.xml` as the deploy manifest

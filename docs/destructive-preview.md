@@ -7,6 +7,8 @@ Use `destructive-preview` before validation or deploy when you want to see how m
 ybsf destructive-preview --config ybsf-metadata-config.json --target-org <org-alias>
 ```
 
+For full command help, run `ybsf destructive-preview --help` or `ybsf help destructive-preview`.
+
 ## What It Compares
 - committed `manifest/package.xml`
 - a target-org-scoped manifest generated from the current config

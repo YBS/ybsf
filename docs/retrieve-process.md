@@ -7,6 +7,8 @@
 ybsf retrieve --target-org <org-alias>
 ```
 
+For full command help, run `ybsf retrieve --help` or `ybsf help retrieve`.
+
 ## End-To-End Flow
 1. Read `ybsf-metadata-config.json` from the repo root.
 2. Generate `manifest/package.xml`.

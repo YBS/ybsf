@@ -7,6 +7,8 @@ Use `document` to generate CSV outputs from retrieved metadata, and for the `obj
 ybsf document <task> [--object <ObjectApiName> | --all] [--source-dir <path>] [--output-dir <path>] [--target-org <org-alias>]
 ```
 
+For full command help, run `ybsf document --help` or `ybsf help document`.
+
 ## Supported Tasks
 - `objectFields`
 - `picklistValues`

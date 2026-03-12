@@ -7,6 +7,8 @@ Use `normalize-config` to make the config deterministic, valid, and optionally a
 ybsf normalize-config [--config ybsf-metadata-config.json] [--target-org <org-alias>] [--init-mode] [--includeManagedPackages] [--includeUnlockedPackages]
 ```
 
+For full command help, run `ybsf normalize-config --help` or `ybsf help normalize-config`.
+
 ## What It Does
 - Sorts metadata rules and member lists into canonical order
 - Ensures required config sections exist

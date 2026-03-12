@@ -7,6 +7,8 @@
 ybsf generate-manifest --config ybsf-metadata-config.json --target-org <org-alias> [--output manifest/package.xml]
 ```
 
+For full command help, run `ybsf generate-manifest --help` or `ybsf help generate-manifest`.
+
 ## Inputs
 - `ybsf-metadata-config.json`
 - target org metadata discovery
