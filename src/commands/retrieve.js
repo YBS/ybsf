@@ -5,10 +5,9 @@ const { loadConfig } = require("../config/load-config");
 const { runGenerateManifest } = require("./generate-manifest");
 const { runPostRetrieveTransforms } = require("../transforms/run-post-retrieve-transforms");
 const {
+  buildSfCommandSpec,
   safeFileSuffix,
   formatDuration,
-  getSfCommand,
-  getSfSpawnOptions,
   formatSfCommandError,
 } = require("./helpers/command-utils");
 const { createRunArtifactsDir, cleanupRunArtifactsDir } = require("./helpers/run-artifacts");
@@ -74,14 +73,14 @@ function normalizeProgressLine(line) {
 }
 
 async function runSfCommand({ cmdArgs, cwd, artifactsDir, artifactBaseName, onProgress, streamLiveOutput }) {
-  const sfCommand = getSfCommand();
+  const { command, args, options, sfCommand } = buildSfCommandSpec(cmdArgs);
   const commandText = `sf ${cmdArgs.join(" ")}`;
   const startedAt = Date.now();
-  const child = spawn(sfCommand, cmdArgs, {
+  const child = spawn(command, args, {
     cwd,
     stdio: ["ignore", "pipe", "pipe"],
     env: process.env,
-    ...getSfSpawnOptions(),
+    ...options,
   });
 
   let stdout = "";

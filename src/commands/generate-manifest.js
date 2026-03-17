@@ -5,10 +5,9 @@ const { loadConfig } = require("../config/load-config");
 const { writePackageXml } = require("../manifest/write-package-xml");
 const { parseListMetadataJson } = require("../sf/parse-list-metadata-json");
 const {
+  buildSfCommandSpec,
   safeFileSuffix,
   formatDuration,
-  getSfCommand,
-  getSfSpawnOptions,
   formatSfCommandError,
 } = require("./helpers/command-utils");
 const { createRunArtifactsDir, cleanupRunArtifactsDir } = require("./helpers/run-artifacts");
@@ -451,14 +450,14 @@ function resolveInstalledPackageRules(config, typeMembersMap, warnings, discover
 }
 
 async function runSfCommand({ cmdArgs, cwd, artifactsDir, artifactBaseName, streamLiveOutput }) {
-  const sfCommand = getSfCommand();
+  const { command, args, options, sfCommand } = buildSfCommandSpec(cmdArgs);
   const commandText = `sf ${cmdArgs.join(" ")}`;
   const sfStartedAt = Date.now();
-  const child = spawn(sfCommand, cmdArgs, {
+  const child = spawn(command, args, {
     cwd,
     stdio: ["ignore", "pipe", "pipe"],
     env: process.env,
-    ...getSfSpawnOptions(),
+    ...options,
   });
 
   let stdout = "";

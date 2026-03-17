@@ -2,7 +2,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { spawn } = require("child_process");
-const { getSfCommand, getSfSpawnOptions, formatSfCommandError } = require("./helpers/command-utils");
+const { buildSfCommandSpec, formatSfCommandError } = require("./helpers/command-utils");
 const { parseXml, elementName } = require("../transforms/helpers/dom-xml");
 
 const OBJECT_FIELDS_TASK = "objectFields";
@@ -321,12 +321,12 @@ function ensureObjectFieldTargetOrg(task, targetOrg) {
 
 function runSfJsonCommand({ cmdArgs, cwd }) {
   return new Promise((resolve, reject) => {
-    const sfCommand = getSfCommand();
-    const child = spawn(sfCommand, cmdArgs, {
+    const { command, args, options, sfCommand } = buildSfCommandSpec(cmdArgs);
+    const child = spawn(command, args, {
       cwd,
       stdio: ["ignore", "pipe", "pipe"],
       env: process.env,
-      ...getSfSpawnOptions(),
+      ...options,
     });
     let stdout = "";
     let stderr = "";
@@ -359,12 +359,12 @@ function runSfJsonCommand({ cmdArgs, cwd }) {
 
 function runSfCommand({ cmdArgs, cwd }) {
   return new Promise((resolve, reject) => {
-    const sfCommand = getSfCommand();
-    const child = spawn(sfCommand, cmdArgs, {
+    const { command, args, options, sfCommand } = buildSfCommandSpec(cmdArgs);
+    const child = spawn(command, args, {
       cwd,
       stdio: ["ignore", "pipe", "pipe"],
       env: process.env,
-      ...getSfSpawnOptions(),
+      ...options,
     });
     let stdout = "";
     let stderr = "";

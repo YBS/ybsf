@@ -6,9 +6,8 @@ const { runGenerateManifest } = require("../commands/generate-manifest");
 const { parsePackageXml } = require("../legacy/parse-package-xml");
 const { writePackageXml } = require("../manifest/write-package-xml");
 const {
+  buildSfCommandSpec,
   safeFileSuffix,
-  getSfCommand,
-  getSfSpawnOptions,
   formatSfCommandError,
 } = require("../commands/helpers/command-utils");
 const { createRunArtifactsDir, cleanupRunArtifactsDir } = require("../commands/helpers/run-artifacts");
@@ -71,14 +70,14 @@ function normalizeDeployProgressLine(line) {
 }
 
 async function runSfCommand({ cmdArgs, cwd, artifactsDir, artifactBaseName, streamLiveOutput, onProgress }) {
-  const sfCommand = getSfCommand();
+  const { command, args, options, sfCommand } = buildSfCommandSpec(cmdArgs);
   const commandText = `sf ${cmdArgs.join(" ")}`;
   const startedAt = Date.now();
-  const child = spawn(sfCommand, cmdArgs, {
+  const child = spawn(command, args, {
     cwd,
     stdio: ["ignore", "pipe", "pipe"],
     env: process.env,
-    ...getSfSpawnOptions(),
+    ...options,
   });
 
   let stdout = "";

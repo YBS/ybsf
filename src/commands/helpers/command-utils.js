@@ -6,13 +6,31 @@ function getSfCommand(platform = process.platform) {
   return "sf";
 }
 
-function getSfSpawnOptions(platform = process.platform, env = process.env) {
+function quoteCmdExeArg(value) {
+  const text = String(value || "");
+  return `"${text.replace(/"/g, '""').replace(/%/g, "%%")}"`;
+}
+
+function buildSfCommandSpec(cmdArgs, platform = process.platform, env = process.env) {
+  const sfCommand = getSfCommand(platform);
   if (platform === "win32") {
+    const command = env && env.ComSpec ? env.ComSpec : "cmd.exe";
+    const commandLine = [sfCommand].concat((cmdArgs || []).map((value) => quoteCmdExeArg(value))).join(" ");
     return {
-      shell: env && env.ComSpec ? env.ComSpec : true,
+      command,
+      args: ["/d", "/s", "/c", commandLine],
+      options: {
+        windowsVerbatimArguments: false,
+      },
+      sfCommand,
     };
   }
-  return {};
+  return {
+    command: sfCommand,
+    args: cmdArgs || [],
+    options: {},
+    sfCommand,
+  };
 }
 
 function formatSfCommandError(err, sfCommand = getSfCommand()) {
@@ -43,9 +61,9 @@ function formatDuration(ms) {
 }
 
 module.exports = {
+  buildSfCommandSpec,
   formatSfCommandError,
   safeFileSuffix,
   formatDuration,
   getSfCommand,
-  getSfSpawnOptions,
 };

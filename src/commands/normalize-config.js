@@ -14,7 +14,7 @@ const {
   buildProjectGenerateManifestArgs,
   parseDiscoveredPackageXml,
 } = require("./helpers/project-manifest-discovery");
-const { getSfCommand, getSfSpawnOptions, formatSfCommandError } = require("./helpers/command-utils");
+const { buildSfCommandSpec, formatSfCommandError } = require("./helpers/command-utils");
 
 const FOLDERED_TYPES = new Set(["Report", "Dashboard", "Document", "EmailTemplate"]);
 const FOLDER_MODE_MEMBER_POLICY = "memberPolicy";
@@ -779,22 +779,24 @@ function discoverMembersViaProjectManifest(
 ) {
   const discoveryDir = path.join(runDir, "org-discovery");
   writeDiscoveryProject(discoveryDir, apiVersion);
-  const sfCommand = getSfCommand();
-
-  const result = spawnSync(
-    sfCommand,
+  const { command, args, options, sfCommand } = buildSfCommandSpec(
     buildProjectGenerateManifestArgs({
       targetOrg,
       apiVersion,
       outputDir: discoveryDir,
       includeManagedPackages,
       includeUnlockedPackages,
-    }),
+    })
+  );
+
+  const result = spawnSync(
+    command,
+    args,
     {
       cwd: discoveryDir,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
-      ...getSfSpawnOptions(),
+      ...options,
     }
   );
   if (result.error) {

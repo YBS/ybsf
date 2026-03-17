@@ -5,7 +5,7 @@ const { parseLegacyProperties } = require("../legacy/parse-properties");
 const { parsePackageXml } = require("../legacy/parse-package-xml");
 const { parseLegacyPropertyTypeMap } = require("../legacy/parse-legacy-type-map");
 const { validateConfigSemantics } = require("../config/semantic-validate");
-const { getSfCommand, getSfSpawnOptions, formatSfCommandError } = require("./helpers/command-utils");
+const { buildSfCommandSpec, formatSfCommandError } = require("./helpers/command-utils");
 
 const FOLDER_MODE_MEMBER_POLICY = "memberPolicy";
 const { parseListMetadataJson } = require("../sf/parse-list-metadata-json");
@@ -673,25 +673,25 @@ function filterIncludeMembersByDiscovery(metadataType, includeMembers, discovere
 }
 
 function discoverFolderedTypeMembersFromOrg(targetOrg, apiVersion, metadataType, warnings) {
-  const sfCommand = getSfCommand();
+  const { command, args, options, sfCommand } = buildSfCommandSpec([
+    "org",
+    "list",
+    "metadata",
+    "--metadata-type",
+    metadataType,
+    "--target-org",
+    targetOrg,
+    "--api-version",
+    apiVersion,
+    "--json",
+  ]);
   const result = spawnSync(
-    sfCommand,
-    [
-      "org",
-      "list",
-      "metadata",
-      "--metadata-type",
-      metadataType,
-      "--target-org",
-      targetOrg,
-      "--api-version",
-      apiVersion,
-      "--json",
-    ],
+    command,
+    args,
     {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
-      ...getSfSpawnOptions(),
+      ...options,
     }
   );
   if (result.error) {
@@ -725,22 +725,24 @@ function discoverMembersViaProjectManifest(
   const discoveryDir = path.join(runDir, "org-discovery");
   try {
     writeDiscoveryProject(discoveryDir, apiVersion);
-    const sfCommand = getSfCommand();
-
-    const result = spawnSync(
-      sfCommand,
+    const { command, args, options, sfCommand } = buildSfCommandSpec(
       buildProjectGenerateManifestArgs({
         targetOrg,
         apiVersion,
         outputDir: discoveryDir,
         includeManagedPackages,
         includeUnlockedPackages,
-      }),
+      })
+    );
+
+    const result = spawnSync(
+      command,
+      args,
       {
         cwd: discoveryDir,
         encoding: "utf8",
         stdio: ["ignore", "pipe", "pipe"],
-        ...getSfSpawnOptions(),
+        ...options,
       }
     );
     if (result.error) {

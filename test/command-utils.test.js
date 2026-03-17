@@ -2,8 +2,8 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 const {
+  buildSfCommandSpec,
   getSfCommand,
-  getSfSpawnOptions,
   formatSfCommandError,
 } = require("../src/commands/helpers/command-utils");
 
@@ -13,10 +13,25 @@ test("getSfCommand uses sf across platforms", () => {
   assert.equal(getSfCommand("linux"), "sf");
 });
 
-test("getSfSpawnOptions enables shell-backed launch on Windows", () => {
-  assert.deepEqual(getSfSpawnOptions("darwin", {}), {});
-  assert.deepEqual(getSfSpawnOptions("win32", { ComSpec: "C:\\\\Windows\\\\System32\\\\cmd.exe" }), {
-    shell: "C:\\\\Windows\\\\System32\\\\cmd.exe",
+test("buildSfCommandSpec uses direct sf launch on non-Windows", () => {
+  assert.deepEqual(buildSfCommandSpec(["org", "list"], "darwin", {}), {
+    command: "sf",
+    args: ["org", "list"],
+    options: {},
+    sfCommand: "sf",
+  });
+});
+
+test("buildSfCommandSpec uses cmd.exe wrapping on Windows", () => {
+  assert.deepEqual(buildSfCommandSpec(["org", "display", "--target-org", "My Org"], "win32", {
+    ComSpec: "C:\\\\Windows\\\\System32\\\\cmd.exe",
+  }), {
+    command: "C:\\\\Windows\\\\System32\\\\cmd.exe",
+    args: ["/d", "/s", "/c", 'sf "org" "display" "--target-org" "My Org"'],
+    options: {
+      windowsVerbatimArguments: false,
+    },
+    sfCommand: "sf",
   });
 });
 
