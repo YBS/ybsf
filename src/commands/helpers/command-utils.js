@@ -20,7 +20,7 @@ function buildSfCommandSpec(cmdArgs, platform = process.platform, env = process.
       command,
       args: ["/d", "/s", "/c", commandLine],
       options: {
-        windowsVerbatimArguments: false,
+        windowsVerbatimArguments: true,
       },
       sfCommand,
     };

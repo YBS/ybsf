@@ -29,7 +29,7 @@ test("buildSfCommandSpec uses cmd.exe wrapping on Windows", () => {
     command: "C:\\\\Windows\\\\System32\\\\cmd.exe",
     args: ["/d", "/s", "/c", 'sf "org" "display" "--target-org" "My Org"'],
     options: {
-      windowsVerbatimArguments: false,
+      windowsVerbatimArguments: true,
     },
     sfCommand: "sf",
   });
