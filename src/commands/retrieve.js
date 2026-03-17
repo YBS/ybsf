@@ -4,7 +4,12 @@ const { spawn } = require("child_process");
 const { loadConfig } = require("../config/load-config");
 const { runGenerateManifest } = require("./generate-manifest");
 const { runPostRetrieveTransforms } = require("../transforms/run-post-retrieve-transforms");
-const { safeFileSuffix, formatDuration } = require("./helpers/command-utils");
+const {
+  safeFileSuffix,
+  formatDuration,
+  getSfCommand,
+  formatSfCommandError,
+} = require("./helpers/command-utils");
 const { createRunArtifactsDir, cleanupRunArtifactsDir } = require("./helpers/run-artifacts");
 
 function stripAnsi(input) {
@@ -68,9 +73,10 @@ function normalizeProgressLine(line) {
 }
 
 async function runSfCommand({ cmdArgs, cwd, artifactsDir, artifactBaseName, onProgress, streamLiveOutput }) {
+  const sfCommand = getSfCommand();
   const commandText = `sf ${cmdArgs.join(" ")}`;
   const startedAt = Date.now();
-  const child = spawn("sf", cmdArgs, {
+  const child = spawn(sfCommand, cmdArgs, {
     cwd,
     stdio: ["ignore", "pipe", "pipe"],
     env: process.env,
@@ -198,9 +204,7 @@ async function runSfCommand({ cmdArgs, cwd, artifactsDir, artifactBaseName, onPr
   );
 
   if (processError) {
-    const code = processError.code ? ` (${processError.code})` : "";
-    const msg = processError.message || "unknown error";
-    throw new Error(`sf command failed${code}: ${msg}`);
+    throw new Error(formatSfCommandError(processError, sfCommand));
   }
 
   if (result.status !== 0) {

@@ -2,6 +2,19 @@ function safeFileSuffix(value) {
   return String(value).replace(/[^A-Za-z0-9._-]+/g, "_");
 }
 
+function getSfCommand(platform = process.platform) {
+  return platform === "win32" ? "sf.cmd" : "sf";
+}
+
+function formatSfCommandError(err, sfCommand = getSfCommand()) {
+  const code = err && err.code ? ` (${err.code})` : "";
+  if (err && err.code === "ENOENT") {
+    return `sf command failed${code}: unable to launch Salesforce CLI executable "${sfCommand}". Ensure Salesforce CLI is installed and available on PATH.`;
+  }
+  const msg = err && err.message ? err.message : "unknown error";
+  return `sf command failed${code}: ${msg}`;
+}
+
 function formatDuration(ms) {
   const value = Number(ms) || 0;
   if (value > 60_000) {
@@ -18,6 +31,8 @@ function formatDuration(ms) {
 }
 
 module.exports = {
+  formatSfCommandError,
   safeFileSuffix,
   formatDuration,
+  getSfCommand,
 };

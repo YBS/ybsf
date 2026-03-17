@@ -4,7 +4,12 @@ const { spawn } = require("child_process");
 const { loadConfig } = require("../config/load-config");
 const { writePackageXml } = require("../manifest/write-package-xml");
 const { parseListMetadataJson } = require("../sf/parse-list-metadata-json");
-const { safeFileSuffix, formatDuration } = require("./helpers/command-utils");
+const {
+  safeFileSuffix,
+  formatDuration,
+  getSfCommand,
+  formatSfCommandError,
+} = require("./helpers/command-utils");
 const { createRunArtifactsDir, cleanupRunArtifactsDir } = require("./helpers/run-artifacts");
 const {
   writeDiscoveryProject,
@@ -445,9 +450,10 @@ function resolveInstalledPackageRules(config, typeMembersMap, warnings, discover
 }
 
 async function runSfCommand({ cmdArgs, cwd, artifactsDir, artifactBaseName, streamLiveOutput }) {
+  const sfCommand = getSfCommand();
   const commandText = `sf ${cmdArgs.join(" ")}`;
   const sfStartedAt = Date.now();
-  const child = spawn("sf", cmdArgs, {
+  const child = spawn(sfCommand, cmdArgs, {
     cwd,
     stdio: ["ignore", "pipe", "pipe"],
     env: process.env,
@@ -504,9 +510,7 @@ async function runSfCommand({ cmdArgs, cwd, artifactsDir, artifactBaseName, stre
   );
 
   if (processError) {
-    const code = processError.code ? ` (${processError.code})` : "";
-    const msg = processError.message || "unknown error";
-    throw new Error(`sf command failed${code}: ${msg}`);
+    throw new Error(formatSfCommandError(processError, sfCommand));
   }
 
   if (result.status !== 0) {

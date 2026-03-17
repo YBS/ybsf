@@ -5,7 +5,11 @@ const { loadConfig } = require("../config/load-config");
 const { runGenerateManifest } = require("../commands/generate-manifest");
 const { parsePackageXml } = require("../legacy/parse-package-xml");
 const { writePackageXml } = require("../manifest/write-package-xml");
-const { safeFileSuffix } = require("../commands/helpers/command-utils");
+const {
+  safeFileSuffix,
+  getSfCommand,
+  formatSfCommandError,
+} = require("../commands/helpers/command-utils");
 const { createRunArtifactsDir, cleanupRunArtifactsDir } = require("../commands/helpers/run-artifacts");
 
 function salesforceLexSort(a, b) {
@@ -66,9 +70,10 @@ function normalizeDeployProgressLine(line) {
 }
 
 async function runSfCommand({ cmdArgs, cwd, artifactsDir, artifactBaseName, streamLiveOutput, onProgress }) {
+  const sfCommand = getSfCommand();
   const commandText = `sf ${cmdArgs.join(" ")}`;
   const startedAt = Date.now();
-  const child = spawn("sf", cmdArgs, {
+  const child = spawn(sfCommand, cmdArgs, {
     cwd,
     stdio: ["ignore", "pipe", "pipe"],
     env: process.env,
@@ -151,9 +156,7 @@ async function runSfCommand({ cmdArgs, cwd, artifactsDir, artifactBaseName, stre
   );
 
   if (processError) {
-    const code = processError.code ? ` (${processError.code})` : "";
-    const msg = processError.message || "unknown error";
-    throw new Error(`sf command failed${code}: ${msg}`);
+    throw new Error(formatSfCommandError(processError, sfCommand));
   }
 
   if (result.status !== 0) {

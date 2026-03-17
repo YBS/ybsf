@@ -14,6 +14,7 @@ const {
   buildProjectGenerateManifestArgs,
   parseDiscoveredPackageXml,
 } = require("./helpers/project-manifest-discovery");
+const { getSfCommand } = require("./helpers/command-utils");
 
 const FOLDERED_TYPES = new Set(["Report", "Dashboard", "Document", "EmailTemplate"]);
 const FOLDER_MODE_MEMBER_POLICY = "memberPolicy";
@@ -778,9 +779,10 @@ function discoverMembersViaProjectManifest(
 ) {
   const discoveryDir = path.join(runDir, "org-discovery");
   writeDiscoveryProject(discoveryDir, apiVersion);
+  const sfCommand = getSfCommand();
 
   const result = spawnSync(
-    "sf",
+    sfCommand,
     buildProjectGenerateManifestArgs({
       targetOrg,
       apiVersion,

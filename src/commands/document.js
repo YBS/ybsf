@@ -2,6 +2,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { spawn } = require("child_process");
+const { getSfCommand, formatSfCommandError } = require("./helpers/command-utils");
 const { parseXml, elementName } = require("../transforms/helpers/dom-xml");
 
 const OBJECT_FIELDS_TASK = "objectFields";
@@ -320,7 +321,8 @@ function ensureObjectFieldTargetOrg(task, targetOrg) {
 
 function runSfJsonCommand({ cmdArgs, cwd }) {
   return new Promise((resolve, reject) => {
-    const child = spawn("sf", cmdArgs, {
+    const sfCommand = getSfCommand();
+    const child = spawn(sfCommand, cmdArgs, {
       cwd,
       stdio: ["ignore", "pipe", "pipe"],
       env: process.env,
@@ -334,7 +336,7 @@ function runSfJsonCommand({ cmdArgs, cwd }) {
       stderr += Buffer.isBuffer(chunk) ? chunk.toString("utf8") : String(chunk || "");
     });
     child.on("error", (err) => {
-      reject(err);
+      reject(new Error(formatSfCommandError(err, sfCommand)));
     });
     child.on("close", (code) => {
       if (code !== 0) {
@@ -356,7 +358,8 @@ function runSfJsonCommand({ cmdArgs, cwd }) {
 
 function runSfCommand({ cmdArgs, cwd }) {
   return new Promise((resolve, reject) => {
-    const child = spawn("sf", cmdArgs, {
+    const sfCommand = getSfCommand();
+    const child = spawn(sfCommand, cmdArgs, {
       cwd,
       stdio: ["ignore", "pipe", "pipe"],
       env: process.env,
@@ -369,7 +372,7 @@ function runSfCommand({ cmdArgs, cwd }) {
     child.stderr.on("data", (chunk) => {
       stderr += Buffer.isBuffer(chunk) ? chunk.toString("utf8") : String(chunk || "");
     });
-    child.on("error", (err) => reject(err));
+    child.on("error", (err) => reject(new Error(formatSfCommandError(err, sfCommand))));
     child.on("close", (code) => {
       if (code !== 0) {
         const message = stripAnsi(stderr || stdout || "").trim();

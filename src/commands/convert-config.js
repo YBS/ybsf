@@ -5,6 +5,7 @@ const { parseLegacyProperties } = require("../legacy/parse-properties");
 const { parsePackageXml } = require("../legacy/parse-package-xml");
 const { parseLegacyPropertyTypeMap } = require("../legacy/parse-legacy-type-map");
 const { validateConfigSemantics } = require("../config/semantic-validate");
+const { getSfCommand } = require("./helpers/command-utils");
 
 const FOLDER_MODE_MEMBER_POLICY = "memberPolicy";
 const { parseListMetadataJson } = require("../sf/parse-list-metadata-json");
@@ -672,8 +673,9 @@ function filterIncludeMembersByDiscovery(metadataType, includeMembers, discovere
 }
 
 function discoverFolderedTypeMembersFromOrg(targetOrg, apiVersion, metadataType, warnings) {
+  const sfCommand = getSfCommand();
   const result = spawnSync(
-    "sf",
+    sfCommand,
     [
       "org",
       "list",
@@ -718,9 +720,10 @@ function discoverMembersViaProjectManifest(
   const discoveryDir = path.join(runDir, "org-discovery");
   try {
     writeDiscoveryProject(discoveryDir, apiVersion);
+    const sfCommand = getSfCommand();
 
     const result = spawnSync(
-      "sf",
+      sfCommand,
       buildProjectGenerateManifestArgs({
         targetOrg,
         apiVersion,
