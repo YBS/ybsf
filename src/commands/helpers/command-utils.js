@@ -3,13 +3,25 @@ function safeFileSuffix(value) {
 }
 
 function getSfCommand(platform = process.platform) {
-  return platform === "win32" ? "sf.cmd" : "sf";
+  return "sf";
+}
+
+function getSfSpawnOptions(platform = process.platform, env = process.env) {
+  if (platform === "win32") {
+    return {
+      shell: env && env.ComSpec ? env.ComSpec : true,
+    };
+  }
+  return {};
 }
 
 function formatSfCommandError(err, sfCommand = getSfCommand()) {
   const code = err && err.code ? ` (${err.code})` : "";
   if (err && err.code === "ENOENT") {
     return `sf command failed${code}: unable to launch Salesforce CLI executable "${sfCommand}". Ensure Salesforce CLI is installed and available on PATH.`;
+  }
+  if (err && err.code === "EINVAL") {
+    return `sf command failed${code}: unable to launch Salesforce CLI executable "${sfCommand}" with the current process settings.`;
   }
   const msg = err && err.message ? err.message : "unknown error";
   return `sf command failed${code}: ${msg}`;
@@ -35,4 +47,5 @@ module.exports = {
   safeFileSuffix,
   formatDuration,
   getSfCommand,
+  getSfSpawnOptions,
 };

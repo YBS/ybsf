@@ -8,6 +8,7 @@ const { writePackageXml } = require("../manifest/write-package-xml");
 const {
   safeFileSuffix,
   getSfCommand,
+  getSfSpawnOptions,
   formatSfCommandError,
 } = require("../commands/helpers/command-utils");
 const { createRunArtifactsDir, cleanupRunArtifactsDir } = require("../commands/helpers/run-artifacts");
@@ -77,6 +78,7 @@ async function runSfCommand({ cmdArgs, cwd, artifactsDir, artifactBaseName, stre
     cwd,
     stdio: ["ignore", "pipe", "pipe"],
     env: process.env,
+    ...getSfSpawnOptions(),
   });
 
   let stdout = "";

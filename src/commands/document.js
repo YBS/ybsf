@@ -2,7 +2,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { spawn } = require("child_process");
-const { getSfCommand, formatSfCommandError } = require("./helpers/command-utils");
+const { getSfCommand, getSfSpawnOptions, formatSfCommandError } = require("./helpers/command-utils");
 const { parseXml, elementName } = require("../transforms/helpers/dom-xml");
 
 const OBJECT_FIELDS_TASK = "objectFields";
@@ -326,6 +326,7 @@ function runSfJsonCommand({ cmdArgs, cwd }) {
       cwd,
       stdio: ["ignore", "pipe", "pipe"],
       env: process.env,
+      ...getSfSpawnOptions(),
     });
     let stdout = "";
     let stderr = "";
@@ -363,6 +364,7 @@ function runSfCommand({ cmdArgs, cwd }) {
       cwd,
       stdio: ["ignore", "pipe", "pipe"],
       env: process.env,
+      ...getSfSpawnOptions(),
     });
     let stdout = "";
     let stderr = "";

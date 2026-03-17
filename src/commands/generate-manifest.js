@@ -8,6 +8,7 @@ const {
   safeFileSuffix,
   formatDuration,
   getSfCommand,
+  getSfSpawnOptions,
   formatSfCommandError,
 } = require("./helpers/command-utils");
 const { createRunArtifactsDir, cleanupRunArtifactsDir } = require("./helpers/run-artifacts");
@@ -457,6 +458,7 @@ async function runSfCommand({ cmdArgs, cwd, artifactsDir, artifactBaseName, stre
     cwd,
     stdio: ["ignore", "pipe", "pipe"],
     env: process.env,
+    ...getSfSpawnOptions(),
   });
 
   let stdout = "";

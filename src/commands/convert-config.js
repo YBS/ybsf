@@ -5,7 +5,7 @@ const { parseLegacyProperties } = require("../legacy/parse-properties");
 const { parsePackageXml } = require("../legacy/parse-package-xml");
 const { parseLegacyPropertyTypeMap } = require("../legacy/parse-legacy-type-map");
 const { validateConfigSemantics } = require("../config/semantic-validate");
-const { getSfCommand } = require("./helpers/command-utils");
+const { getSfCommand, getSfSpawnOptions, formatSfCommandError } = require("./helpers/command-utils");
 
 const FOLDER_MODE_MEMBER_POLICY = "memberPolicy";
 const { parseListMetadataJson } = require("../sf/parse-list-metadata-json");
@@ -691,8 +691,13 @@ function discoverFolderedTypeMembersFromOrg(targetOrg, apiVersion, metadataType,
     {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
+      ...getSfSpawnOptions(),
     }
   );
+  if (result.error) {
+    warnings.push(`Type ${metadataType}: org discovery failed during convert-config (${formatSfCommandError(result.error, sfCommand)}).`);
+    return [];
+  }
   if (result.status !== 0) {
     const message = (result.stderr || "").trim() || `status ${result.status}`;
     warnings.push(`Type ${metadataType}: org discovery failed during convert-config (${message}).`);
@@ -735,8 +740,13 @@ function discoverMembersViaProjectManifest(
         cwd: discoveryDir,
         encoding: "utf8",
         stdio: ["ignore", "pipe", "pipe"],
+        ...getSfSpawnOptions(),
       }
     );
+    if (result.error) {
+      warnings.push(`Org manifest discovery failed during convert-config (${formatSfCommandError(result.error, sfCommand)}).`);
+      return new Map();
+    }
     if (result.status !== 0) {
       const message = (result.stderr || "").trim() || `status ${result.status}`;
       warnings.push(`Org manifest discovery failed during convert-config (${message}).`);

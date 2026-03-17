@@ -14,7 +14,7 @@ const {
   buildProjectGenerateManifestArgs,
   parseDiscoveredPackageXml,
 } = require("./helpers/project-manifest-discovery");
-const { getSfCommand } = require("./helpers/command-utils");
+const { getSfCommand, getSfSpawnOptions, formatSfCommandError } = require("./helpers/command-utils");
 
 const FOLDERED_TYPES = new Set(["Report", "Dashboard", "Document", "EmailTemplate"]);
 const FOLDER_MODE_MEMBER_POLICY = "memberPolicy";
@@ -794,8 +794,12 @@ function discoverMembersViaProjectManifest(
       cwd: discoveryDir,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
+      ...getSfSpawnOptions(),
     }
   );
+  if (result.error) {
+    throw new Error(formatSfCommandError(result.error, sfCommand));
+  }
   if (result.status !== 0) {
     const message = (result.stderr || "").trim() || `status ${result.status}`;
     throw new Error(`Org manifest discovery failed (${message})`);
