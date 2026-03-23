@@ -28,6 +28,7 @@ Compile `ybsf-metadata-config.json` into a Salesforce `package.xml` manifest for
 
 ## Target org requirement
 - `generate-manifest` requires `--target-org`.
+- Org discovery should exclude config-disabled metadata types.
 - Command fails if target org is not provided.
 - Manifest members are derived from org discovery and filtered by config.
 

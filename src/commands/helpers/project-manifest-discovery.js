@@ -28,6 +28,7 @@ function buildProjectGenerateManifestArgs({
   outputDir,
   includeManagedPackages = false,
   includeUnlockedPackages = false,
+  excludedMetadataTypes = [],
 }) {
   const cmdArgs = [
     "project",
@@ -42,6 +43,16 @@ function buildProjectGenerateManifestArgs({
     "--type",
     "package",
   ];
+  const normalizedExcludedMetadataTypes = Array.from(
+    new Set(
+      (excludedMetadataTypes || [])
+        .map((typeName) => String(typeName || "").trim())
+        .filter((typeName) => typeName.length > 0)
+    )
+  ).sort();
+  for (const metadataType of normalizedExcludedMetadataTypes) {
+    cmdArgs.push("--excluded-metadata", metadataType);
+  }
   if (includeManagedPackages) {
     cmdArgs.push("--include-packages", "managed");
   }

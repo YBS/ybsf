@@ -96,6 +96,16 @@ const LEVEL3_PARENT_RULES = [
   },
 ];
 
+function collectExcludedConfigMetadataTypes(config) {
+  return Array.from(
+    new Set(
+      (config.metadataTypes || [])
+        .filter((rule) => rule && rule.metadataType && !rule.enabled)
+        .map((rule) => rule.metadataType)
+    )
+  ).sort(salesforceLexSort);
+}
+
 function salesforceLexSort(a, b) {
   if (a === b) {
     return 0;
@@ -274,10 +284,14 @@ function getMemberNamespace(typeName, memberName) {
     return parseNamespacePrefix(memberToken);
   }
 
-  // Hyphen members use ObjectName-MemberName. Namespace can only come from ObjectName.
+  // Hyphen members use ObjectName-MemberName. Namespace can appear on either side.
   if (OBJECT_HYPHEN_TYPES.has(typeName) && full.includes("-")) {
-    const objectToken = full.split("-", 1)[0];
-    return parseNamespacePrefix(objectToken);
+    const [objectToken, memberToken] = full.split("-", 2);
+    const objectNamespace = parseNamespacePrefix(objectToken);
+    if (objectNamespace) {
+      return objectNamespace;
+    }
+    return parseNamespacePrefix(memberToken);
   }
 
   if (full.includes("/")) {
@@ -527,7 +541,15 @@ async function runSfCommand({ cmdArgs, cwd, artifactsDir, artifactBaseName, stre
   return stdout || "";
 }
 
-async function discoverFromOrg(config, targetOrg, warnings, step, runDir, debug = false) {
+async function discoverFromOrg(
+  config,
+  targetOrg,
+  warnings,
+  step,
+  runDir,
+  debug = false,
+  excludedMetadataTypes = []
+) {
   const discoveryDir = path.join(runDir, "org-discovery");
   const outputDir = discoveryDir;
   try {
@@ -536,6 +558,7 @@ async function discoverFromOrg(config, targetOrg, warnings, step, runDir, debug 
       targetOrg,
       apiVersion: config.apiVersion,
       outputDir,
+      excludedMetadataTypes,
       includeManagedPackages: Boolean(
         config.packageRules && config.packageRules.includeManagedPackages
       ),
@@ -908,11 +931,20 @@ async function runGenerateManifest({ configPath, outputPath, targetOrg, status, 
   if (!targetOrg || !String(targetOrg).trim()) {
     throw new Error("generate-manifest requires --target-org");
   }
+  const excludedMetadataTypes = collectExcludedConfigMetadataTypes(config);
   const warnings = [];
   const typeMembersMap = new Map();
   step(`Discovering org metadata from ${targetOrg}`);
   const discoverStartedAt = Date.now();
-  const discoveredByType = await discoverFromOrg(config, targetOrg, warnings, step, runDir, debug);
+  const discoveredByType = await discoverFromOrg(
+    config,
+    targetOrg,
+    warnings,
+    step,
+    runDir,
+    debug,
+    excludedMetadataTypes
+  );
   step(`Org discovery completed in ${formatDuration(Date.now() - discoverStartedAt)}`);
 
   const enabledConfigTypes = new Set(
@@ -928,13 +960,13 @@ async function runGenerateManifest({ configPath, outputPath, targetOrg, status, 
     }
     try {
       step(`Running fallback discovery for ${metadataType}`);
-      const fallbackMembers = await discoverTypeFromListMetadata(
+      const fallbackMembers = (await discoverTypeFromListMetadata(
         targetOrg,
         config.apiVersion,
         metadataType,
         step,
         runDir
-      )
+      ))
         .filter((m) => m !== "*")
         .sort(salesforceLexSort);
       discoveredByType.set(metadataType, fallbackMembers);
@@ -1013,6 +1045,7 @@ async function runGenerateManifest({ configPath, outputPath, targetOrg, status, 
         runDir,
         configPath: resolvedConfigPath,
         apiVersion: config.apiVersion,
+        excludedDiscoveryMetadataTypes: excludedMetadataTypes,
         discoveredByType: serializeMapOfArrays(discoveredByType),
         selectedByType: serializeMapOfSets(typeMembersMap),
         excludedByType: serializeMapOfSets(excludedTypeMembersMap),
@@ -1043,5 +1076,7 @@ async function runGenerateManifest({ configPath, outputPath, targetOrg, status, 
 }
 
 module.exports = {
+  collectExcludedConfigMetadataTypes,
+  getMemberNamespace,
   runGenerateManifest,
 };

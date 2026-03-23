@@ -36,7 +36,7 @@ flowchart LR
 ```
 
 ## Main Filtering Stages
-1. Discover metadata available in the target org.
+1. Discover metadata available in the target org while excluding config-disabled metadata types.
 2. Keep only metadata types where `enabled=true`.
 3. Apply `memberPolicy` or `folderPolicy` for each enabled type.
 4. Apply managed-package and unlocked-package rules from `packageRules`.
