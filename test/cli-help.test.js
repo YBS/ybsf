@@ -30,6 +30,7 @@ test("help command prints deploy-specific options", async () => {
   assert.match(output, /--target-org <alias>, -o/);
   assert.match(output, /--test-level <level>, -l/);
   assert.match(output, /--apply-destructive/);
+  assert.match(output, /--skip-destructive/);
 });
 
 test("command --help prints command-specific options without running the command", async () => {

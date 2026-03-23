@@ -120,6 +120,7 @@ function parseArgs(args, shortAliases = {}) {
   const BOOLEAN_FLAGS = new Set([
     "force",
     "apply-destructive",
+    "skip-destructive",
     "init-mode",
     "debug",
     "includeManagedPackages",
@@ -418,6 +419,7 @@ async function runCli(args) {
       configPath: parsed.config ? path.resolve(parsed.config) : path.resolve("ybsf-metadata-config.json"),
       targetOrg: parsed["target-org"] || null,
       applyDestructive: Boolean(parsed["apply-destructive"]),
+      skipDestructive: Boolean(parsed["skip-destructive"]),
       testLevel: parsed["test-level"] || null,
       tests: parsed.tests || null,
       debug,
@@ -432,7 +434,10 @@ async function runCli(args) {
     if (result.tests && result.tests.length > 0) {
       console.log(`Tests: ${result.tests.join(", ")}`);
     }
-    if (result.destructivePath) {
+    if (result.destructiveSkipped) {
+      console.log("Destructive manifest: skipped");
+      console.log("Destructive applied: false");
+    } else if (result.destructivePath) {
       console.log(`Destructive manifest: ${result.destructivePath}`);
       console.log(`Destructive applied: ${result.destructiveApplied ? "true" : "false"}`);
     } else {
@@ -451,6 +456,7 @@ async function runCli(args) {
       configPath: parsed.config ? path.resolve(parsed.config) : path.resolve("ybsf-metadata-config.json"),
       targetOrg: parsed["target-org"] || null,
       applyDestructive: Boolean(parsed["apply-destructive"]),
+      skipDestructive: Boolean(parsed["skip-destructive"]),
       testLevel: parsed["test-level"] || null,
       tests: parsed.tests || null,
       debug,
@@ -465,7 +471,10 @@ async function runCli(args) {
     if (result.tests && result.tests.length > 0) {
       console.log(`Tests: ${result.tests.join(", ")}`);
     }
-    if (result.destructivePath) {
+    if (result.destructiveSkipped) {
+      console.log("Destructive manifest: skipped");
+      console.log("Destructive applied: false");
+    } else if (result.destructivePath) {
       console.log(`Destructive manifest: ${result.destructivePath}`);
       console.log(`Destructive applied: ${result.destructiveApplied ? "true" : "false"}`);
     } else {

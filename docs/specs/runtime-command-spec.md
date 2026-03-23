@@ -138,11 +138,12 @@ ybsf destructive-preview --config ybsf-metadata-config.json --target-org <org-al
 
 ## `validate-deploy`
 ```bash
-ybsf validate-deploy --config ybsf-metadata-config.json --target-org <org-alias> [--apply-destructive] [--test-level <level>] [--tests <comma-separated-test-names>]
+ybsf validate-deploy --config ybsf-metadata-config.json --target-org <org-alias> [--apply-destructive] [--skip-destructive] [--test-level <level>] [--tests <comma-separated-test-names>]
 ```
 - Behavior:
   - run validate/check-only deploy using committed `manifest/package.xml`.
   - use committed `manifest/package.xml` only for destructive-diff computation.
+  - `--skip-destructive` skips destructive-diff computation entirely.
   - deploy command is invoked with `--ignore-conflicts` to overwrite source-tracking conflict state in target org.
   - before running deploy, show target alias/username/endpoint/environment and require interactive confirmation.
   - test execution:
@@ -152,17 +153,19 @@ ybsf validate-deploy --config ybsf-metadata-config.json --target-org <org-alias>
     - interactive runs prompt to include or skip destructive changes for this run.
     - `--apply-destructive` includes destructive changes without prompting.
     - non-interactive runs skip destructive changes unless `--apply-destructive` is set.
+    - `--skip-destructive` suppresses destructive generation and takes precedence over `--apply-destructive`.
 - Exit:
   - non-zero on validation failure.
   - zero on validation success.
 
 ## `deploy`
 ```bash
-ybsf deploy --config ybsf-metadata-config.json --target-org <org-alias> [--apply-destructive] [--test-level <level>] [--tests <comma-separated-test-names>]
+ybsf deploy --config ybsf-metadata-config.json --target-org <org-alias> [--apply-destructive] [--skip-destructive] [--test-level <level>] [--tests <comma-separated-test-names>]
 ```
 - Behavior:
   - run deploy using committed `manifest/package.xml`.
   - use committed `manifest/package.xml` only for destructive-diff computation.
+  - `--skip-destructive` skips destructive-diff computation entirely.
   - deploy command is invoked with `--ignore-conflicts` to overwrite source-tracking conflict state in target org.
   - before running deploy, show target alias/username/endpoint/environment and require interactive confirmation.
   - test execution:
@@ -172,6 +175,7 @@ ybsf deploy --config ybsf-metadata-config.json --target-org <org-alias> [--apply
     - when destructive candidates exist, interactive runs prompt to include or skip destructive changes.
     - `--apply-destructive` includes destructive changes without prompting.
     - non-interactive runs require explicit `--apply-destructive` to include destructive changes.
+    - `--skip-destructive` suppresses destructive generation and takes precedence over `--apply-destructive`.
 - Exit:
   - non-zero on deployment failure.
   - zero on deployment success.

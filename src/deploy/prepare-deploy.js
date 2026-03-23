@@ -223,6 +223,7 @@ async function prepareDeploy({
   targetOrg,
   status,
   desiredManifestPath = path.resolve("manifest/package.xml"),
+  skipDestructive = false,
   debug = false,
 }) {
   const step = (message) => {
@@ -236,72 +237,78 @@ async function prepareDeploy({
 
   const runDir = createRunArtifactsDir("ybsf-deploy", process.cwd());
   try {
+    step("Loading config");
+    const { config, path: resolvedConfigPath } = loadConfig(configPath || path.resolve("ybsf-metadata-config.json"));
 
-  step("Loading config");
-  const { config, path: resolvedConfigPath } = loadConfig(configPath || path.resolve("ybsf-metadata-config.json"));
-
-  const resolvedDesiredManifestPath = path.resolve(desiredManifestPath);
-  if (!fs.existsSync(resolvedDesiredManifestPath)) {
-    throw new Error(`Committed deploy manifest not found: ${resolvedDesiredManifestPath}`);
-  }
-  step(`Using committed deploy manifest ${resolvedDesiredManifestPath}`);
-  const desiredMembersByType = parsePackageXml(fs.readFileSync(resolvedDesiredManifestPath, "utf8"));
-
-  step(`Generating target-org scoped manifest from ${targetOrg}`);
-  const targetOrgManifestPath = path.join(runDir, "target-org-manifest", "package.xml");
-  const targetOrgManifestResult = await runGenerateManifest({
-    configPath: resolvedConfigPath,
-    outputPath: targetOrgManifestPath,
-    targetOrg,
-    debug,
-    status: (msg) => step(msg.replace(/^\[generate-manifest\]\s*/u, "generate-manifest: ")),
-  });
-  const orgPackagePath = targetOrgManifestResult.outputPath;
-  const orgMembersByType = parsePackageXml(fs.readFileSync(orgPackagePath, "utf8"));
-
-  const { destructiveByType, nonDeletableRecordTypes } = computeDestructiveCandidates({
-    desiredMembersByType,
-    orgMembersByType,
-  });
-  const destructivePath = path.join(runDir, "destructiveChanges.xml");
-  if (destructiveByType.size > 0) {
-    writePackageXml({
-      outputPath: destructivePath,
-      apiVersion: config.apiVersion,
-      typeMembersMap: destructiveByType,
-    });
-  } else {
-    fs.rmSync(destructivePath, { force: true });
-  }
-
-  const destructiveCount = Array.from(destructiveByType.values()).reduce(
-    (sum, members) => sum + members.size,
-    0
-  );
-  const destructiveManifestXml =
-    destructiveByType.size > 0 && fs.existsSync(destructivePath)
-      ? fs.readFileSync(destructivePath, "utf8")
-      : null;
-  const debugPath = path.join(runDir, "deploy-prepare-debug.json");
-  fs.writeFileSync(
-    debugPath,
-    `${JSON.stringify(
-      {
-        generatedAt: new Date().toISOString(),
+    const resolvedDesiredManifestPath = path.resolve(desiredManifestPath);
+    if (!fs.existsSync(resolvedDesiredManifestPath)) {
+      throw new Error(`Committed deploy manifest not found: ${resolvedDesiredManifestPath}`);
+    }
+    step(`Using committed deploy manifest ${resolvedDesiredManifestPath}`);
+    const targetOrgManifestPath = path.join(runDir, "target-org-manifest", "package.xml");
+    let orgPackagePath = null;
+    let destructiveByType = new Map();
+    let nonDeletableRecordTypes = [];
+    if (skipDestructive) {
+      step("Skipping destructive manifest generation");
+    } else {
+      const desiredMembersByType = parsePackageXml(fs.readFileSync(resolvedDesiredManifestPath, "utf8"));
+      step(`Generating target-org scoped manifest from ${targetOrg}`);
+      const targetOrgManifestResult = await runGenerateManifest({
         configPath: resolvedConfigPath,
+        outputPath: targetOrgManifestPath,
         targetOrg,
+        debug,
+        status: (msg) => step(msg.replace(/^\[generate-manifest\]\s*/u, "generate-manifest: ")),
+      });
+      orgPackagePath = targetOrgManifestResult.outputPath;
+      const orgMembersByType = parsePackageXml(fs.readFileSync(orgPackagePath, "utf8"));
+
+      ({ destructiveByType, nonDeletableRecordTypes } = computeDestructiveCandidates({
+        desiredMembersByType,
+        orgMembersByType,
+      }));
+    }
+    const destructivePath = path.join(runDir, "destructiveChanges.xml");
+    if (destructiveByType.size > 0) {
+      writePackageXml({
+        outputPath: destructivePath,
         apiVersion: config.apiVersion,
-        desiredManifestPath: resolvedDesiredManifestPath,
-        orgPackagePath,
-        destructiveCount,
-        destructiveByType: mapToSortedObject(destructiveByType),
-        nonDeletableRecordTypes,
-      },
-      null,
-      2
-    )}\n`,
-    "utf8"
-  );
+        typeMembersMap: destructiveByType,
+      });
+    } else {
+      fs.rmSync(destructivePath, { force: true });
+    }
+
+    const destructiveCount = Array.from(destructiveByType.values()).reduce(
+      (sum, members) => sum + members.size,
+      0
+    );
+    const destructiveManifestXml =
+      destructiveByType.size > 0 && fs.existsSync(destructivePath)
+        ? fs.readFileSync(destructivePath, "utf8")
+        : null;
+    const debugPath = path.join(runDir, "deploy-prepare-debug.json");
+    fs.writeFileSync(
+      debugPath,
+      `${JSON.stringify(
+        {
+          generatedAt: new Date().toISOString(),
+          configPath: resolvedConfigPath,
+          targetOrg,
+          apiVersion: config.apiVersion,
+          desiredManifestPath: resolvedDesiredManifestPath,
+          destructiveSkipped: skipDestructive,
+          orgPackagePath,
+          destructiveCount,
+          destructiveByType: mapToSortedObject(destructiveByType),
+          nonDeletableRecordTypes,
+        },
+        null,
+        2
+      )}\n`,
+      "utf8"
+    );
 
     return {
       runDir,
@@ -311,6 +318,7 @@ async function prepareDeploy({
       config,
       targetOrg,
       desiredManifestPath: resolvedDesiredManifestPath,
+      destructiveSkipped: skipDestructive,
       orgPackagePath,
       destructivePath: destructiveByType.size > 0 ? destructivePath : null,
       destructiveManifestXml,

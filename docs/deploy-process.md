@@ -4,7 +4,7 @@
 
 ## Command
 ```bash
-ybsf deploy --config ybsf-metadata-config.json --target-org <org-alias> [--apply-destructive] [--test-level <level>] [--tests <comma-separated-test-names>]
+ybsf deploy --config ybsf-metadata-config.json --target-org <org-alias> [--apply-destructive] [--skip-destructive] [--test-level <level>] [--tests <comma-separated-test-names>]
 ```
 
 For full command help, run `ybsf deploy --help` or `ybsf help deploy`.
@@ -36,6 +36,17 @@ ybsf deploy --target-org <org-alias> --apply-destructive
 ```
 
 This does not skip the target-org confirmation prompt in an interactive terminal.
+
+## Skipping Destructive Generation Entirely
+Use `--skip-destructive` to skip target-org manifest generation and deploy without computing or applying destructive changes.
+
+```bash
+ybsf deploy --target-org <org-alias> --skip-destructive
+```
+
+This is useful when you know there are no destructive changes to apply, or when you need a first deployment to complete before a destructive manifest can be used.
+
+If `--skip-destructive` and `--apply-destructive` are both set, `--skip-destructive` wins and destructive changes are not applied.
 
 ## End-Of-Run Status Summary
 After the deploy command finishes, `ybsf` calls `sf project deploy report --job-id <deploy-id> --target-org <org-alias> --json` and prints a structured summary.

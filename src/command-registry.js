@@ -108,13 +108,14 @@ const COMMANDS = [
   {
     name: "validate-deploy",
     description: "Run check-only deploy from manifest/package.xml with optional destructive apply",
-    usage: "ybsf validate-deploy [--config <path>] --target-org <alias> [--apply-destructive] [--test-level <level>] [--tests <comma-separated-tests>] [--debug]",
-    flags: ["--config", "--target-org", "--apply-destructive", "--test-level", "--tests", "--debug"],
+    usage: "ybsf validate-deploy [--config <path>] --target-org <alias> [--apply-destructive] [--skip-destructive] [--test-level <level>] [--tests <comma-separated-tests>] [--debug]",
+    flags: ["--config", "--target-org", "--apply-destructive", "--skip-destructive", "--test-level", "--tests", "--debug"],
     shortFlags: ["-c", "-o", "-l", "-t"],
     flagDetails: [
       { long: "--config <path>", short: "-c", description: "Config file to read. Default: ybsf-metadata-config.json." },
       { long: "--target-org <alias>", short: "-o", description: "Target org alias to validate against." },
       { long: "--apply-destructive", description: "Apply generated destructiveChanges.xml without the follow-up prompt." },
+      { long: "--skip-destructive", description: "Skip destructive candidate generation and run the validation without destructiveChanges.xml." },
       { long: "--test-level <level>", short: "-l", description: "Deploy test level. Example: RunLocalTests or RunSpecifiedTests." },
       { long: "--tests <comma-separated-tests>", short: "-t", description: "Required with --test-level RunSpecifiedTests. Comma-separated Apex test names." },
       { long: "--debug", description: "Keep run artifacts under tmp/ for inspection." },
@@ -123,13 +124,14 @@ const COMMANDS = [
   {
     name: "deploy",
     description: "Run deploy from manifest/package.xml with optional destructive apply",
-    usage: "ybsf deploy [--config <path>] --target-org <alias> [--apply-destructive] [--test-level <level>] [--tests <comma-separated-tests>] [--debug]",
-    flags: ["--config", "--target-org", "--apply-destructive", "--test-level", "--tests", "--debug"],
+    usage: "ybsf deploy [--config <path>] --target-org <alias> [--apply-destructive] [--skip-destructive] [--test-level <level>] [--tests <comma-separated-tests>] [--debug]",
+    flags: ["--config", "--target-org", "--apply-destructive", "--skip-destructive", "--test-level", "--tests", "--debug"],
     shortFlags: ["-c", "-o", "-l", "-t"],
     flagDetails: [
       { long: "--config <path>", short: "-c", description: "Config file to read. Default: ybsf-metadata-config.json." },
       { long: "--target-org <alias>", short: "-o", description: "Target org alias to deploy to." },
       { long: "--apply-destructive", description: "Apply generated destructiveChanges.xml without the follow-up prompt." },
+      { long: "--skip-destructive", description: "Skip destructive candidate generation and run the deploy without destructiveChanges.xml." },
       { long: "--test-level <level>", short: "-l", description: "Deploy test level. Example: RunLocalTests or RunSpecifiedTests." },
       { long: "--tests <comma-separated-tests>", short: "-t", description: "Required with --test-level RunSpecifiedTests. Comma-separated Apex test names." },
       { long: "--debug", description: "Keep run artifacts under tmp/ for inspection." },

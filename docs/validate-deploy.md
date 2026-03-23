@@ -4,7 +4,7 @@ Use `validate-deploy` for a check-only deployment using the committed manifest. 
 
 ## Command
 ```bash
-ybsf validate-deploy --config ybsf-metadata-config.json --target-org <org-alias> [--apply-destructive] [--test-level <level>] [--tests <comma-separated-test-names>]
+ybsf validate-deploy --config ybsf-metadata-config.json --target-org <org-alias> [--apply-destructive] [--skip-destructive] [--test-level <level>] [--tests <comma-separated-test-names>]
 ```
 
 For full command help, run `ybsf validate-deploy --help` or `ybsf help validate-deploy`.
@@ -24,6 +24,11 @@ ybsf validate-deploy --target-org <org-alias>
 Validate and include destructive changes automatically:
 ```bash
 ybsf validate-deploy --target-org <org-alias> --apply-destructive
+```
+
+Validate while skipping destructive candidate generation entirely:
+```bash
+ybsf validate-deploy --target-org <org-alias> --skip-destructive
 ```
 
 Validate with specified tests:
@@ -47,6 +52,8 @@ ybsf validate-deploy --target-org <org-alias> --test-level RunSpecifiedTests --t
   - then you are prompted to include destructive changes unless `--apply-destructive` is already set
 - non-interactive terminal:
   - destructive changes are skipped unless `--apply-destructive` is set
+- `--skip-destructive` skips destructive candidate generation entirely, so no target-org manifest or `destructiveChanges.xml` is produced for the run
+- if `--skip-destructive` and `--apply-destructive` are both set, `--skip-destructive` wins
 
 ## End-Of-Run Status Summary
 After validation finishes, `ybsf` calls `sf project deploy report --job-id <deploy-id> --target-org <org-alias> --json` and prints a structured summary.
