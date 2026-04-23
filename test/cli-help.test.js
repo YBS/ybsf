@@ -33,6 +33,14 @@ test("help command prints deploy-specific options", async () => {
   assert.match(output, /--skip-destructive/);
 });
 
+test("help command prints retrieve clean option", async () => {
+  const { result, output } = await captureConsole("log", () => runCli(["help", "retrieve"]));
+  assert.equal(result, 0);
+  assert.match(output, /ybsf retrieve --target-org <alias> \[--clean\] \[--debug\]/);
+  assert.match(output, /--clean/);
+  assert.match(output, /tracking state/);
+});
+
 test("command --help prints command-specific options without running the command", async () => {
   const { result, output } = await captureConsole("log", () => runCli(["deploy", "--help"]));
   assert.equal(result, 0);

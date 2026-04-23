@@ -85,11 +85,12 @@ const COMMANDS = [
   {
     name: "retrieve",
     description: "Generate manifest, retrieve metadata, and run post-retrieve transforms",
-    usage: "ybsf retrieve --target-org <alias> [--debug]",
-    flags: ["--target-org", "--debug"],
+    usage: "ybsf retrieve --target-org <alias> [--clean] [--debug]",
+    flags: ["--target-org", "--clean", "--debug"],
     shortFlags: ["-o"],
     flagDetails: [
       { long: "--target-org <alias>", short: "-o", description: "Target org alias to retrieve metadata from." },
+      { long: "--clean", description: "Clear force-app and matching Salesforce CLI tracking state before retrieve." },
       { long: "--debug", description: "Keep run artifacts under tmp/ for inspection." },
     ],
   },

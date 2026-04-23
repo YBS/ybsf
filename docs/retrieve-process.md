@@ -4,7 +4,7 @@
 
 ## Command
 ```bash
-ybsf retrieve --target-org <org-alias>
+ybsf retrieve --target-org <org-alias> [--clean]
 ```
 
 For full command help, run `ybsf retrieve --help` or `ybsf help retrieve`.
@@ -12,11 +12,22 @@ For full command help, run `ybsf retrieve --help` or `ybsf help retrieve`.
 ## End-To-End Flow
 1. Read `ybsf-metadata-config.json` from the repo root.
 2. Generate `manifest/package.xml`.
-3. Clear `force-app/`.
+3. If `--clean` is set, clear `force-app/` and matching Salesforce CLI tracking state.
 4. Run `sf project retrieve start`.
 5. Run the post-retrieve transform pipeline.
 
 Manifest generation is described in [manifest-generation.md](manifest-generation.md).
+
+## Clean Retrieves
+By default, `ybsf retrieve` does not delete `force-app/` before retrieving. This keeps Salesforce CLI source-tracking state coherent across iterative retrieves and avoids local `isomorphic-git` tracking corruption caused by deleting source files while tracking data still points at them.
+
+Use `--clean` when you need a fresh local baseline:
+
+```bash
+ybsf retrieve --target-org <org-alias> --clean
+```
+
+Clean retrieve removes `force-app/` contents and matching local tracking state under `.sf/orgs/` and `.sfdx/orgs/` before calling Salesforce retrieve. This catches files for metadata that was deleted from the org or dropped from the manifest, but the next retrieve rebuilds tracking state and can take longer. Close IDE extensions that poll the org during a clean retrieve when possible.
 
 ## Required Object Transformations
 Salesforce retrieve behavior is broader than the manifest boundary for object metadata. When a `CustomObject` member is retrieved, Salesforce also brings along related object internals and object-scoped files. `ybsf` cleans those extras back down to manifest scope after retrieve.
@@ -131,6 +142,7 @@ Retrieve creates a run directory like:
 tmp/
 └── ybsf-retrieve-2026-03-10T14-32-18-123Z/
     ├── debug.json
+    ├── org-display-for-clean.cmd.txt
     ├── project-retrieve-start.cmd.txt
     ├── project-retrieve-start.stdout.raw.txt
     ├── project-retrieve-start.stdout.txt
@@ -142,6 +154,7 @@ tmp/
 
 Useful files to inspect:
 - `debug.json`: manifest path, config path, timings, manifest-generation warnings, and transform summary
+- `org-display-for-clean.*`: only present for `--clean`; resolves target org identifiers used to find matching local tracking state
 - `project-retrieve-start.*`: the exact `sf project retrieve start` command, raw terminal output, sanitized output, and exit status
 - a separate sibling `tmp/ybsf-generate-manifest-.../` run directory preserved when retrieve calls `generate-manifest` with `--debug`
 

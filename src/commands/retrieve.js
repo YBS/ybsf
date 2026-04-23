@@ -233,7 +233,67 @@ function clearDirectoryContents(dirPath) {
   }
 }
 
-async function runRetrieve({ targetOrg, status, debug = false }) {
+function parseJson(raw, context) {
+  try {
+    return JSON.parse(String(raw || ""));
+  } catch (err) {
+    throw new Error(`${context}: invalid JSON (${err.message})`);
+  }
+}
+
+function isSafeTrackingIdentifier(identifier) {
+  const value = String(identifier || "").trim();
+  return Boolean(value) && value !== "." && value !== ".." && !path.isAbsolute(value) && !/[\\/]/u.test(value);
+}
+
+function buildTrackingStateDirs(cwd, identifiers) {
+  const safeIdentifiers = Array.from(new Set((identifiers || []).filter(isSafeTrackingIdentifier)));
+  const dirs = [];
+  for (const identifier of safeIdentifiers) {
+    dirs.push(path.join(cwd, ".sf", "orgs", identifier));
+    dirs.push(path.join(cwd, ".sfdx", "orgs", identifier));
+  }
+  return dirs;
+}
+
+async function resolveTargetOrgTrackingIdentifiers({ targetOrg, cwd, runDir }) {
+  const displayOutput = await runSfCommand({
+    cmdArgs: ["org", "display", "--target-org", targetOrg, "--json"],
+    cwd,
+    artifactsDir: runDir,
+    artifactBaseName: "org-display-for-clean",
+    streamLiveOutput: false,
+  });
+  const displayJson = parseJson(displayOutput.stdout, "sf org display");
+  const result = displayJson?.result || {};
+  return [
+    targetOrg,
+    result.id,
+    result.orgId,
+    result.username,
+    result.userName,
+    result.alias,
+  ].filter(Boolean);
+}
+
+function clearRetrieveState({ cwd, forceAppDir, trackingIdentifiers }) {
+  clearDirectoryContents(forceAppDir);
+
+  const deletedTrackingStateDirs = [];
+  for (const dirPath of buildTrackingStateDirs(cwd, trackingIdentifiers)) {
+    if (!fs.existsSync(dirPath)) {
+      continue;
+    }
+    fs.rmSync(dirPath, { recursive: true, force: true });
+    deletedTrackingStateDirs.push(dirPath);
+  }
+
+  return {
+    deletedTrackingStateDirs,
+  };
+}
+
+async function runRetrieve({ targetOrg, status, debug = false, clean = false }) {
   const startedAt = Date.now();
   const step = (message) => {
     if (typeof status === "function") {
@@ -269,10 +329,25 @@ async function runRetrieve({ targetOrg, status, debug = false }) {
   timings.generateManifestMs = Date.now() - generateStartedAt;
 
   const forceAppDir = path.resolve(cwd, "force-app");
-  const clearStartedAt = Date.now();
-  step(`Clearing ${forceAppDir}`);
-  clearDirectoryContents(forceAppDir);
-  timings.clearForceAppMs = Date.now() - clearStartedAt;
+  let cleanResult = {
+    deletedTrackingStateDirs: [],
+  };
+  if (clean) {
+    const cleanStartedAt = Date.now();
+    step("Clean retrieve requested; clearing force-app and matching Salesforce CLI tracking state");
+    step("Clean retrieve rebuilds source tracking; close IDE extensions that poll the org during this retrieve if possible");
+    const trackingIdentifiers = await resolveTargetOrgTrackingIdentifiers({ targetOrg, cwd, runDir });
+    cleanResult = clearRetrieveState({ cwd, forceAppDir, trackingIdentifiers });
+    timings.cleanRetrieveStateMs = Date.now() - cleanStartedAt;
+    step(`Cleared ${forceAppDir}`);
+    if (cleanResult.deletedTrackingStateDirs.length > 0) {
+      step(`Cleared ${cleanResult.deletedTrackingStateDirs.length} Salesforce CLI tracking state directories`);
+    } else {
+      step("No matching Salesforce CLI tracking state directories found");
+    }
+  } else {
+    step("Skipping force-app cleanup; use --clean for a full source and tracking-state reset");
+  }
 
   const retrieveStartedAt = Date.now();
   step(`Retrieving metadata from ${targetOrg}`);
@@ -346,6 +421,8 @@ async function runRetrieve({ targetOrg, status, debug = false }) {
         configPath,
         manifestPath,
         forceAppDir,
+        clean,
+        cleanResult,
         timings,
       warnings: generateResult.warnings || [],
       transformResult,
@@ -362,6 +439,8 @@ async function runRetrieve({ targetOrg, status, debug = false }) {
       targetOrg,
       manifestPath,
       forceAppDir,
+      clean,
+      cleanResult,
       runDir: debug ? runDir : null,
       debugPath: debug ? debugPath : null,
       timings,
@@ -376,4 +455,10 @@ async function runRetrieve({ targetOrg, status, debug = false }) {
 
 module.exports = {
   runRetrieve,
+  _private: {
+    buildTrackingStateDirs,
+    clearDirectoryContents,
+    clearRetrieveState,
+    isSafeTrackingIdentifier,
+  },
 };

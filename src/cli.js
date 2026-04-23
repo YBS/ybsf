@@ -123,6 +123,7 @@ function parseArgs(args, shortAliases = {}) {
     "skip-destructive",
     "init-mode",
     "debug",
+    "clean",
     "includeManagedPackages",
     "includeUnlockedPackages",
     "all",
@@ -366,8 +367,10 @@ async function runCli(args) {
   if (command === "retrieve") {
     const parsed = parseArgs(rest, COMMAND_SHORT_FLAG_ALIASES.retrieve);
     const debug = Boolean(parsed.debug);
+    const clean = Boolean(parsed.clean);
     const result = await runRetrieve({
       targetOrg: parsed["target-org"] || null,
+      clean,
       debug,
       status: statusLogger(debug),
     });

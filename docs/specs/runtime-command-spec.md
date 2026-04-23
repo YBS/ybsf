@@ -111,11 +111,12 @@ ybsf normalize-config [--config ybsf-metadata-config.json] [--target-org <org-al
 
 ## `retrieve`
 ```bash
-ybsf retrieve --target-org <org-alias>
+ybsf retrieve --target-org <org-alias> [--clean]
 ```
 - Behavior:
   - always generate `manifest/package.xml` from `ybsf-metadata-config.json`.
-  - clear all existing contents under `force-app/`.
+  - by default, leave existing `force-app/` contents in place and let Salesforce retrieve layer retrieved source over the tree.
+  - when `--clean` is provided, clear existing contents under `force-app/` and matching local Salesforce CLI tracking state under `.sf/orgs/` and `.sfdx/orgs/` before retrieve.
   - run `sf project retrieve start` using the generated manifest and target org.
   - always execute post-retrieve transform pipeline after retrieve.
   - post-retrieve transforms are modular, process only components included by the generated manifest, and consume `processingRules.optionalProcessing` for optional sort/remove actions.
