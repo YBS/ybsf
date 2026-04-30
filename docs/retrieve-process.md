@@ -12,22 +12,33 @@ For full command help, run `ybsf retrieve --help` or `ybsf help retrieve`.
 ## End-To-End Flow
 1. Read `ybsf-metadata-config.json` from the repo root.
 2. Generate `manifest/package.xml`.
-3. If `--clean` is set, clear `force-app/` and matching Salesforce CLI tracking state.
-4. Run `sf project retrieve start`.
-5. Run the post-retrieve transform pipeline.
+3. Resolve target-org metadata (`sf org display`) to determine identifiers and whether the org is sandbox-like (sandbox or scratch) based on its `instanceUrl`.
+4. On sandbox-like orgs, clear matching Salesforce CLI source-tracking state under `.sf/orgs/<id>/` and `.sfdx/orgs/<id>/`. If `--clean` is set, also clear `force-app/` contents.
+5. Run `sf project retrieve start --ignore-conflicts` against the generated manifest. `--ignore-conflicts` is passed unconditionally so source-tracking divergence never blocks a manifest-driven retrieve.
+6. Run the post-retrieve transform pipeline.
+7. On sandbox-like orgs, run `sf project reset tracking --no-prompt` so the post-transform state becomes the new tracking baseline. On production-like orgs, this step is skipped because source tracking is not available there.
 
 Manifest generation is described in [manifest-generation.md](manifest-generation.md).
 
-## Clean Retrieves
-By default, `ybsf retrieve` does not delete `force-app/` before retrieving. This keeps Salesforce CLI source-tracking state coherent across iterative retrieves and avoids local `isomorphic-git` tracking corruption caused by deleting source files while tracking data still points at them.
+## Source-Tracking Behavior
+`ybsf retrieve` is manifest-driven, so source-tracking state is treated as derived. By default, on sandbox and scratch orgs, the command:
 
-Use `--clean` when you need a fresh local baseline:
+- wipes `.sf/orgs/<id>/` and `.sfdx/orgs/<id>/` before retrieve so the SF CLI rebuilds a fresh `isomorphic-git` index and avoids checksum-corruption errors that accumulate over iterative runs;
+- passes `--ignore-conflicts` to the retrieve so org state always wins over local tracking diffs;
+- resets tracking after post-retrieve transforms so files removed by transforms are not flagged as pending local changes.
+
+Sandbox-like detection uses the org's `instanceUrl`: hosts containing `.sandbox.` (modern enhanced domains for sandboxes and scratch orgs) and legacy `cs<N>.*` instances are treated as sandbox-like. Other URLs (production, dev edition, Trailhead playgrounds) are treated as production-like, and tracking-related steps are skipped silently.
+
+Project-local SF CLI configuration in `.sf/config.json` (default org alias and similar) is preserved — only per-org subdirectories under `orgs/` are removed.
+
+## Clean Retrieves
+Use `--clean` when you also need a fresh `force-app/` baseline:
 
 ```bash
 ybsf retrieve --target-org <org-alias> --clean
 ```
 
-Clean retrieve removes `force-app/` contents and matching local tracking state under `.sf/orgs/` and `.sfdx/orgs/` before calling Salesforce retrieve. This catches files for metadata that was deleted from the org or dropped from the manifest, but the next retrieve rebuilds tracking state and can take longer. Close IDE extensions that poll the org during a clean retrieve when possible.
+`--clean` clears `force-app/` contents in addition to the tracking-dir cleanup that runs by default. This catches files for metadata that was deleted from the org or dropped from the manifest. Close IDE extensions that poll the org during a clean retrieve when possible.
 
 ## Required Object Transformations
 Salesforce retrieve behavior is broader than the manifest boundary for object metadata. When a `CustomObject` member is retrieved, Salesforce also brings along related object internals and object-scoped files. `ybsf` cleans those extras back down to manifest scope after retrieve.
@@ -153,9 +164,10 @@ tmp/
 ```
 
 Useful files to inspect:
-- `debug.json`: manifest path, config path, timings, manifest-generation warnings, and transform summary
-- `org-display-for-clean.*`: only present for `--clean`; resolves target org identifiers used to find matching local tracking state
+- `debug.json`: manifest path, config path, timings, manifest-generation warnings, transform summary, tracking-reset outcome (`succeeded` / `skipped` / `not-applicable`), and any tracking-reset error message
+- `org-display-for-clean.*`: always present; resolves target-org identifiers and `instanceUrl` used for tracking-dir cleanup and sandbox-like detection. Sensitive fields (`accessToken`, `refreshToken`, `clientSecret`, `password`) are redacted before artifact files are written, so `--debug` bundles can be shared safely.
 - `project-retrieve-start.*`: the exact `sf project retrieve start` command, raw terminal output, sanitized output, and exit status
+- `project-reset-tracking.*`: present on sandbox-like orgs only; captures the post-retrieve `sf project reset tracking` invocation
 - a separate sibling `tmp/ybsf-generate-manifest-.../` run directory preserved when retrieve calls `generate-manifest` with `--debug`
 
 ## Related Docs

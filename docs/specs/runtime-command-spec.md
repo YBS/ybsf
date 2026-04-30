@@ -115,12 +115,18 @@ ybsf retrieve --target-org <org-alias> [--clean]
 ```
 - Behavior:
   - always generate `manifest/package.xml` from `ybsf-metadata-config.json`.
+  - resolve target-org identifiers and `instanceUrl` via `sf org display`; classify the org as sandbox-like (sandbox or scratch) when the host contains `.sandbox.` or matches legacy `cs<N>.*` instances, else production-like.
   - by default, leave existing `force-app/` contents in place and let Salesforce retrieve layer retrieved source over the tree.
-  - when `--clean` is provided, clear existing contents under `force-app/` and matching local Salesforce CLI tracking state under `.sf/orgs/` and `.sfdx/orgs/` before retrieve.
-  - run `sf project retrieve start` using the generated manifest and target org.
+  - on sandbox-like orgs, always clear matching Salesforce CLI tracking state under `.sf/orgs/<id>/` and `.sfdx/orgs/<id>/` before retrieve so the SF CLI rebuilds a fresh `isomorphic-git` index. Project-local config (`.sf/config.json`) is preserved.
+  - on production-like orgs, skip all tracking-related steps (no cleanup, no reset, no log lines) since source tracking is unavailable there.
+  - when `--clean` is provided, additionally clear existing contents under `force-app/` before retrieve.
+  - run `sf project retrieve start --ignore-conflicts` using the generated manifest and target org. `--ignore-conflicts` is passed unconditionally so source-tracking divergence never blocks the manifest-driven retrieve.
   - always execute post-retrieve transform pipeline after retrieve.
+  - on sandbox-like orgs, run `sf project reset tracking --no-prompt` after transforms so the post-transform state becomes the new tracking baseline.
   - post-retrieve transforms are modular, process only components included by the generated manifest, and consume `processingRules.optionalProcessing` for optional sort/remove actions.
   - object transform stage removes out-of-scope object subcomponents/files from SFDX layout to enforce manifest parity.
+- Artifacts:
+  - all `sf` invocations that capture stdout/stderr to `tmp/ybsf-retrieve-*/` apply credential redaction (`accessToken`, `refreshToken`, `clientSecret`, `password`) before writing to disk.
 - Exit:
   - non-zero on retrieval errors.
   - zero on success.

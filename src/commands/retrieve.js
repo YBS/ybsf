@@ -12,6 +12,17 @@ const {
 } = require("./helpers/command-utils");
 const { createRunArtifactsDir, cleanupRunArtifactsDir } = require("./helpers/run-artifacts");
 
+function redactSensitiveFields(input) {
+  // Mask credential-bearing JSON fields so that artifact files persisted with
+  // --debug do not leak live session tokens. Pattern intentionally tolerates
+  // optional whitespace around the colon and any JSON-string value content.
+  const text = String(input || "");
+  return text.replace(
+    /("(?:accessToken|refreshToken|clientSecret|password)"\s*:\s*")[^"]*(")/g,
+    "$1<REDACTED>$2"
+  );
+}
+
 function stripAnsi(input) {
   const text = String(input || "");
   // CSI sequences
@@ -185,10 +196,10 @@ async function runSfCommand({ cmdArgs, cwd, artifactsDir, artifactBaseName, onPr
   fs.writeFileSync(path.join(artifactsDir, `${baseName}.cmd.txt`), `${commandText}\n`, "utf8");
   const rawStdout = stdout || "";
   const rawStderr = stderr || "";
-  fs.writeFileSync(path.join(artifactsDir, `${baseName}.stdout.raw.txt`), rawStdout, "utf8");
-  fs.writeFileSync(path.join(artifactsDir, `${baseName}.stderr.raw.txt`), rawStderr, "utf8");
-  fs.writeFileSync(path.join(artifactsDir, `${baseName}.stdout.txt`), sanitizeTerminalOutput(rawStdout), "utf8");
-  fs.writeFileSync(path.join(artifactsDir, `${baseName}.stderr.txt`), sanitizeTerminalOutput(rawStderr), "utf8");
+  fs.writeFileSync(path.join(artifactsDir, `${baseName}.stdout.raw.txt`), redactSensitiveFields(rawStdout), "utf8");
+  fs.writeFileSync(path.join(artifactsDir, `${baseName}.stderr.raw.txt`), redactSensitiveFields(rawStderr), "utf8");
+  fs.writeFileSync(path.join(artifactsDir, `${baseName}.stdout.txt`), redactSensitiveFields(sanitizeTerminalOutput(rawStdout)), "utf8");
+  fs.writeFileSync(path.join(artifactsDir, `${baseName}.stderr.txt`), redactSensitiveFields(sanitizeTerminalOutput(rawStderr)), "utf8");
   fs.writeFileSync(
     path.join(artifactsDir, `${baseName}.status.json`),
     `${JSON.stringify(
@@ -256,7 +267,19 @@ function buildTrackingStateDirs(cwd, identifiers) {
   return dirs;
 }
 
-async function resolveTargetOrgTrackingIdentifiers({ targetOrg, cwd, runDir }) {
+function isSandboxLikeUrl(instanceUrl) {
+  // Sandboxes and scratch orgs in modern enhanced domains include `.sandbox.`
+  // in the host (e.g., `<myDomain>--<sbx>.sandbox.my.salesforce.com`). Legacy
+  // sandbox instances live on `cs<N>.*` hosts. Production / dev edition orgs
+  // do not match either pattern, and source tracking is not available there.
+  const url = String(instanceUrl || "").toLowerCase();
+  if (!url) return false;
+  if (url.includes(".sandbox.")) return true;
+  if (/\/\/cs\d+\./.test(url)) return true;
+  return false;
+}
+
+async function resolveTargetOrgInfo({ targetOrg, cwd, runDir }) {
   const displayOutput = await runSfCommand({
     cmdArgs: ["org", "display", "--target-org", targetOrg, "--json"],
     cwd,
@@ -266,7 +289,7 @@ async function resolveTargetOrgTrackingIdentifiers({ targetOrg, cwd, runDir }) {
   });
   const displayJson = parseJson(displayOutput.stdout, "sf org display");
   const result = displayJson?.result || {};
-  return [
+  const trackingIdentifiers = [
     targetOrg,
     result.id,
     result.orgId,
@@ -274,11 +297,14 @@ async function resolveTargetOrgTrackingIdentifiers({ targetOrg, cwd, runDir }) {
     result.userName,
     result.alias,
   ].filter(Boolean);
+  return {
+    trackingIdentifiers,
+    instanceUrl: result.instanceUrl || "",
+    isSandboxLike: isSandboxLikeUrl(result.instanceUrl),
+  };
 }
 
-function clearRetrieveState({ cwd, forceAppDir, trackingIdentifiers }) {
-  clearDirectoryContents(forceAppDir);
-
+function clearTrackingStateDirs({ cwd, trackingIdentifiers }) {
   const deletedTrackingStateDirs = [];
   for (const dirPath of buildTrackingStateDirs(cwd, trackingIdentifiers)) {
     if (!fs.existsSync(dirPath)) {
@@ -287,10 +313,12 @@ function clearRetrieveState({ cwd, forceAppDir, trackingIdentifiers }) {
     fs.rmSync(dirPath, { recursive: true, force: true });
     deletedTrackingStateDirs.push(dirPath);
   }
+  return { deletedTrackingStateDirs };
+}
 
-  return {
-    deletedTrackingStateDirs,
-  };
+function clearRetrieveState({ cwd, forceAppDir, trackingIdentifiers }) {
+  clearDirectoryContents(forceAppDir);
+  return clearTrackingStateDirs({ cwd, trackingIdentifiers });
 }
 
 async function runRetrieve({ targetOrg, status, debug = false, clean = false }) {
@@ -332,22 +360,29 @@ async function runRetrieve({ targetOrg, status, debug = false, clean = false }) 
   let cleanResult = {
     deletedTrackingStateDirs: [],
   };
+  const cleanStartedAt = Date.now();
+  const orgInfo = await resolveTargetOrgInfo({ targetOrg, cwd, runDir });
+  const { trackingIdentifiers, isSandboxLike } = orgInfo;
   if (clean) {
-    const cleanStartedAt = Date.now();
-    step("Clean retrieve requested; clearing force-app and matching Salesforce CLI tracking state");
-    step("Clean retrieve rebuilds source tracking; close IDE extensions that poll the org during this retrieve if possible");
-    const trackingIdentifiers = await resolveTargetOrgTrackingIdentifiers({ targetOrg, cwd, runDir });
+    step("Clean retrieve requested; clearing force-app");
+    if (isSandboxLike) {
+      step("Clean retrieve rebuilds source tracking; close IDE extensions that poll the org during this retrieve if possible");
+    }
     cleanResult = clearRetrieveState({ cwd, forceAppDir, trackingIdentifiers });
-    timings.cleanRetrieveStateMs = Date.now() - cleanStartedAt;
     step(`Cleared ${forceAppDir}`);
+    if (isSandboxLike && cleanResult.deletedTrackingStateDirs.length > 0) {
+      step(`Cleared ${cleanResult.deletedTrackingStateDirs.length} Salesforce CLI tracking state directories`);
+    }
+  } else if (isSandboxLike) {
+    step("Clearing Salesforce CLI source-tracking state for a clean baseline (use --clean to also reset force-app)");
+    cleanResult = clearTrackingStateDirs({ cwd, trackingIdentifiers });
     if (cleanResult.deletedTrackingStateDirs.length > 0) {
       step(`Cleared ${cleanResult.deletedTrackingStateDirs.length} Salesforce CLI tracking state directories`);
     } else {
       step("No matching Salesforce CLI tracking state directories found");
     }
-  } else {
-    step("Skipping force-app cleanup; use --clean for a full source and tracking-state reset");
   }
+  timings.cleanRetrieveStateMs = Date.now() - cleanStartedAt;
 
   const retrieveStartedAt = Date.now();
   step(`Retrieving metadata from ${targetOrg}`);
@@ -373,6 +408,7 @@ async function runRetrieve({ targetOrg, status, debug = false, clean = false }) 
         targetOrg,
         "--api-version",
         config.apiVersion,
+        "--ignore-conflicts",
       ],
       cwd,
       artifactsDir: runDir,
@@ -410,6 +446,36 @@ async function runRetrieve({ targetOrg, status, debug = false, clean = false }) 
     }
   }
 
+  const resetTrackingStartedAt = Date.now();
+  let trackingResetOutcome = "succeeded";
+  let trackingResetError = null;
+  if (!isSandboxLike) {
+    trackingResetOutcome = "not-applicable";
+  } else {
+    try {
+      step("Resetting source tracking to current org state for a clean baseline (post-transforms)");
+      await runSfCommand({
+        cmdArgs: [
+          "project",
+          "reset",
+          "tracking",
+          "--target-org",
+          targetOrg,
+          "--no-prompt",
+        ],
+        cwd,
+        artifactsDir: runDir,
+        artifactBaseName: "project-reset-tracking",
+        streamLiveOutput: false,
+      });
+    } catch (err) {
+      trackingResetOutcome = "skipped";
+      trackingResetError = err && err.message ? String(err.message) : "unknown error";
+      step("Source tracking reset skipped (see debug log for details)");
+    }
+  }
+  timings.resetTrackingMs = Date.now() - resetTrackingStartedAt;
+
   timings.totalMs = Date.now() - startedAt;
   const debugPath = path.join(runDir, "debug.json");
   fs.writeFileSync(
@@ -423,6 +489,8 @@ async function runRetrieve({ targetOrg, status, debug = false, clean = false }) 
         forceAppDir,
         clean,
         cleanResult,
+        trackingResetOutcome,
+        trackingResetError,
         timings,
       warnings: generateResult.warnings || [],
       transformResult,
@@ -441,6 +509,8 @@ async function runRetrieve({ targetOrg, status, debug = false, clean = false }) 
       forceAppDir,
       clean,
       cleanResult,
+      trackingResetOutcome,
+      trackingResetError,
       runDir: debug ? runDir : null,
       debugPath: debug ? debugPath : null,
       timings,
@@ -459,6 +529,9 @@ module.exports = {
     buildTrackingStateDirs,
     clearDirectoryContents,
     clearRetrieveState,
+    clearTrackingStateDirs,
     isSafeTrackingIdentifier,
+    isSandboxLikeUrl,
+    redactSensitiveFields,
   },
 };
