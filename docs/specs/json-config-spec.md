@@ -33,7 +33,8 @@ This config intentionally excludes auth/login/org-specific connection values.
       "sortApplicationOverrides": true,
       "sortLayoutPlatformActionListItems": true,
       "sortGlobalValueSetInactiveValues": true,
-      "sortWorkflowTimeTriggers": true
+      "sortWorkflowTimeTriggers": true,
+      "sortPicklistDependencies": false
     },
     "includePseudoObjects": [
       "CaseClose",
@@ -64,6 +65,7 @@ This config intentionally excludes auth/login/org-specific connection values.
     - `sortLayoutPlatformActionListItems` (boolean)
     - `sortGlobalValueSetInactiveValues` (boolean)
     - `sortWorkflowTimeTriggers` (boolean)
+    - `sortPicklistDependencies` (boolean, default `false`)
   - `includePseudoObjects` (string array, required in newly generated configs; defaults to `["CaseClose","CaseComment","CaseInteraction","Global"]` when omitted)
 
 ## `packageRules` Shape

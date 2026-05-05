@@ -130,6 +130,17 @@ Optional transformations are controlled by `processingRules.optionalProcessing`.
 - Additional cleanup:
   - removes an entire `workflows/<Object>.workflow-meta.xml` file when the workflow object is out of scope
 
+### `sortPicklistDependencies`
+- Transform: `objects`
+- Effect: sorts dependent picklist value settings deterministically
+- Default: `false`
+- XML elements sorted in `objects/*/fields/*.field-meta.xml` for `Picklist` and `MultiselectPicklist` fields:
+  - `<valueSettings>` inside `<valueSet>`
+  - repeated `<controllingFieldValue>` entries inside each `<valueSettings>`
+- Sort key fields:
+  - `<valueName>` for `<valueSettings>`
+  - controlling field value text for `<controllingFieldValue>`
+
 ## Example
 ```bash
 ybsf retrieve --target-org <org-alias>
