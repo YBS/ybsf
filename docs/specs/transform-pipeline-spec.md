@@ -107,6 +107,10 @@ Run transforms in this order:
   - remove entries for objects outside manifest `CustomObject` scope;
   - remove custom-field entries outside manifest `CustomField` scope;
   - remove any entries listed in `processingRules.excludeStandardFields` (supports standard-field rollout drift handling).
+- Profile `layoutAssignments` filtering rules:
+  - remove entries for layouts outside manifest `Layout` scope;
+  - remove entries for objects outside manifest `CustomObject` scope;
+  - remove entries whose record type is outside manifest `RecordType` scope.
 - Object `recordType` filtering rules:
   - for retained `objects/*/recordTypes/*.recordType-meta.xml` files, remove `picklistValues` entries whose backing custom fields are outside manifest `CustomField` scope;
   - remove `picklistValues` entries for standard fields listed in `processingRules.excludeStandardFields`.
