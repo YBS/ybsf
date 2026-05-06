@@ -82,6 +82,7 @@ ybsf normalize-config [--config ybsf-metadata-config.json] [--target-org <org-al
       - `sortLayoutPlatformActionListItems`
       - `sortGlobalValueSetInactiveValues`
       - `sortWorkflowTimeTriggers`
+      - `sortPicklistDependencies`
     - migrate legacy `processingRules.excludeUserPermissions` to `processingRules.userPermissionsPolicy` (`mode=exclude`) and remove legacy key.
     - remove any `CustomObject.memberPolicy.members` entries that are present in `processingRules.includePseudoObjects` (pseudo object scope is controlled in `processingRules`).
     - fail-fast if duplicate `metadataType` rules exist.

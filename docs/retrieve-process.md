@@ -53,7 +53,7 @@ These required transforms are always on because they restore manifest parity.
 
 ## Always-On Normalization
 In addition to object cleanup, the pipeline always applies the normalization needed to keep retrieved metadata consistent with config scope:
-- permission set and profile cleanup tied to object scope, field scope, and user-permission policy
+- permission set and profile cleanup tied to object scope, layout scope, record type scope, field scope, and user-permission policy
 - record type picklist cleanup for excluded custom fields and excluded standard fields
 - deterministic XML formatting and ordering
 
@@ -129,6 +129,17 @@ Optional transformations are controlled by `processingRules.optionalProcessing`.
   - `<workflowTimeTriggerUnit>`
 - Additional cleanup:
   - removes an entire `workflows/<Object>.workflow-meta.xml` file when the workflow object is out of scope
+
+### `sortPicklistDependencies`
+- Transform: `objects`
+- Effect: sorts dependent picklist value settings deterministically
+- Default: `false`
+- XML elements sorted in `objects/*/fields/*.field-meta.xml` for `Picklist` and `MultiselectPicklist` fields:
+  - `<valueSettings>` inside `<valueSet>`
+  - repeated `<controllingFieldValue>` entries inside each `<valueSettings>`
+- Sort key fields:
+  - `<valueName>` for `<valueSettings>`
+  - controlling field value text for `<controllingFieldValue>`
 
 ## Example
 ```bash

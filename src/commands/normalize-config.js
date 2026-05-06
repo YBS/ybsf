@@ -767,6 +767,7 @@ function sortConfig(config) {
       config.processingRules.optionalProcessing.sortGlobalValueSetInactiveValues
     ),
     sortWorkflowTimeTriggers: Boolean(config.processingRules.optionalProcessing.sortWorkflowTimeTriggers),
+    sortPicklistDependencies: Boolean(config.processingRules.optionalProcessing.sortPicklistDependencies),
   };
 }
 

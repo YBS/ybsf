@@ -152,14 +152,44 @@ function removeOutOfScopeRecordTypeVisibilitiesNodes(root, manifestMembersByType
 }
 
 function removeOutOfScopeLayoutAssignmentsNodes(root, manifestMembersByType) {
+  if (!manifestMembersByType || typeof manifestMembersByType.get !== "function") {
+    return { removedCount: 0 };
+  }
+
+  const objectMembers = manifestMembersByType.get("CustomObject") || [];
+  const hasCustomObjectScope = manifestMembersByType.has("CustomObject");
+  const includeAllObjects = objectMembers.includes("*");
+  const objectAllowSet = includeAllObjects ? null : new Set(objectMembers);
+
   let removedCount = 0;
   for (const node of getDirectChildrenByTag(root, "layoutAssignments")) {
     const recordTypeName = getFirstChildText(node, "recordType");
-    if (!recordTypeName) {
+    if (recordTypeName && !isMemberIncluded(manifestMembersByType, "RecordType", recordTypeName)) {
+      root.removeChild(node);
+      removedCount += 1;
       continue;
     }
-    const include = isMemberIncluded(manifestMembersByType, "RecordType", recordTypeName);
-    if (!include) {
+
+    const layoutName = getFirstChildText(node, "layout");
+    if (!layoutName) {
+      continue;
+    }
+
+    if (manifestMembersByType.has("Layout") && !isMemberIncluded(manifestMembersByType, "Layout", layoutName)) {
+      root.removeChild(node);
+      removedCount += 1;
+      continue;
+    }
+
+    const separatorIndex = layoutName.indexOf("-");
+    const layoutObjectName = separatorIndex > 0 ? layoutName.slice(0, separatorIndex) : "";
+    if (
+      layoutObjectName &&
+      hasCustomObjectScope &&
+      !includeAllObjects &&
+      objectAllowSet &&
+      !objectAllowSet.has(layoutObjectName)
+    ) {
       root.removeChild(node);
       removedCount += 1;
     }

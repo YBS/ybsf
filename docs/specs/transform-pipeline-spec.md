@@ -62,6 +62,7 @@ Run transforms in this order:
     - `sortLayoutPlatformActionListItems`
     - `sortGlobalValueSetInactiveValues`
     - `sortWorkflowTimeTriggers`
+    - `sortPicklistDependencies`
   - `removeProfileInactiveComponents` is profile-only and defaults to `false` because it can create large one-time compaction diffs.
 
 ## Idempotence Requirement
@@ -107,6 +108,13 @@ Run transforms in this order:
   - remove entries for objects outside manifest `CustomObject` scope;
   - remove custom-field entries outside manifest `CustomField` scope;
   - remove any entries listed in `processingRules.excludeStandardFields` (supports standard-field rollout drift handling).
+- Profile `layoutAssignments` filtering rules:
+  - remove entries for layouts outside manifest `Layout` scope;
+  - remove entries for objects outside manifest `CustomObject` scope;
+  - remove entries whose record type is outside manifest `RecordType` scope.
+- Optional picklist dependency sorting:
+  - when `sortPicklistDependencies` is `true`, sort `Picklist` and `MultiselectPicklist` field `valueSettings` by `valueName`;
+  - sort repeated `controllingFieldValue` entries inside each `valueSettings` by text value.
 - Object `recordType` filtering rules:
   - for retained `objects/*/recordTypes/*.recordType-meta.xml` files, remove `picklistValues` entries whose backing custom fields are outside manifest `CustomField` scope;
   - remove `picklistValues` entries for standard fields listed in `processingRules.excludeStandardFields`.

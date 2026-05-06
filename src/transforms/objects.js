@@ -256,6 +256,59 @@ function sortObjectActionOverrides(objectMetaPath) {
   return { changed, scanned: true };
 }
 
+function sortTextDirectChildren(parentElement, childName) {
+  sortDirectChildElements(parentElement, childName, (itemElement) =>
+    String(itemElement.textContent || "").trim()
+  );
+}
+
+function sortPicklistDependenciesFile(fieldMetaPath) {
+  if (!fs.existsSync(fieldMetaPath)) {
+    return { changed: false, scanned: false };
+  }
+
+  const original = fs.readFileSync(fieldMetaPath, "utf8");
+  const doc = parseXml(original);
+  const root = doc.documentElement;
+  if (!root || elementName(root) !== "CustomField") {
+    return { changed: false, scanned: true, written: false };
+  }
+
+  const fieldType = getFirstChildText(root, "type");
+  if (fieldType !== "Picklist" && fieldType !== "MultiselectPicklist") {
+    return { changed: false, scanned: true, written: false };
+  }
+
+  const valueSets = [];
+  for (let child = root.firstChild; child; child = child.nextSibling) {
+    if (child.nodeType === 1 && elementName(child) === "valueSet") {
+      valueSets.push(child);
+    }
+  }
+
+  let hasValueSettings = false;
+  for (const valueSet of valueSets) {
+    for (let child = valueSet.firstChild; child; child = child.nextSibling) {
+      if (child.nodeType === 1 && elementName(child) === "valueSettings") {
+        hasValueSettings = true;
+        sortTextDirectChildren(child, "controllingFieldValue");
+      }
+    }
+    sortDirectChildElements(valueSet, "valueSettings", (itemElement) =>
+      getFirstChildText(itemElement, "valueName")
+    );
+  }
+
+  if (!hasValueSettings) {
+    return { changed: false, scanned: true, written: false };
+  }
+
+  const serialized = serializeXml(doc);
+  const changed = serialized !== original;
+  fs.writeFileSync(fieldMetaPath, serialized, "utf8");
+  return { changed, scanned: true, written: true };
+}
+
 function filterSharingRulesFile({
   sharingRulesFilePath,
   criteriaAllowSet,
@@ -675,6 +728,7 @@ async function runObjectsTransform({ config, manifestMembersByType, forceAppDir 
   const objectsDir = path.join(rootDir, "objects");
   const optionalProcessing = resolveOptionalProcessing(config);
   const shouldSortObjectActionOverrides = optionalProcessing.sortObjectActionOverrides;
+  const shouldSortPicklistDependencies = optionalProcessing.sortPicklistDependencies;
   if (!fs.existsSync(rootDir)) {
     summary.skipped = true;
     return summary;
@@ -881,6 +935,32 @@ async function runObjectsTransform({ config, manifestMembersByType, forceAppDir 
       summary.writtenFiles += 1;
       if (result.changed) {
         summary.changedFiles += 1;
+      }
+    }
+  }
+
+  if (shouldSortPicklistDependencies) {
+    for (const objectName of remainingObjectDirs) {
+      const dirPath = path.join(objectsDir, objectName, "fields");
+      if (!fs.existsSync(dirPath)) {
+        continue;
+      }
+      const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+      for (const entry of entries) {
+        if (!entry.isFile() || !entry.name.endsWith(".field-meta.xml")) {
+          continue;
+        }
+        const result = sortPicklistDependenciesFile(path.join(dirPath, entry.name));
+        if (!result.scanned) {
+          continue;
+        }
+        summary.scannedFiles += 1;
+        if (result.written) {
+          summary.writtenFiles += 1;
+        }
+        if (result.changed) {
+          summary.changedFiles += 1;
+        }
       }
     }
   }

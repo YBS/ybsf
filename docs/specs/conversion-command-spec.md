@@ -68,6 +68,7 @@ ybsf convert-config [--input-dir <path>] [--output-dir <path>] [--target-org <or
     - `sortLayoutPlatformActionListItems = true`
     - `sortGlobalValueSetInactiveValues = true`
     - `sortWorkflowTimeTriggers = true`
+    - `sortPicklistDependencies = false`
   - `processingRules.includePseudoObjects` from legacy `CustomObject` include/ignore behavior:
     - if `CustomObject` include members exist: include only pseudo objects explicitly included.
     - else if `CustomObject` ignore members exist: include all pseudo objects except explicitly ignored.

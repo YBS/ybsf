@@ -6,6 +6,7 @@ const OPTIONAL_PROCESSING_DEFAULTS = Object.freeze({
   sortLayoutPlatformActionListItems: true,
   sortGlobalValueSetInactiveValues: true,
   sortWorkflowTimeTriggers: true,
+  sortPicklistDependencies: false,
 });
 
 function resolveOptionalProcessing(config) {

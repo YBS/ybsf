@@ -1,6 +1,6 @@
 {
   "name": "ybsf",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Yellow Brick Systems Salesforce metadata CLI",
   "bin": {
     "ybsf": "./cmd/ybsf.js"
