@@ -9,6 +9,14 @@ Release process and branching conventions are described in [docs/release-process
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-05-06
+
+### Added
+- Optional `sortPicklistDependencies` post-retrieve transform for dependent picklist field metadata. When enabled, it sorts picklist `<valueSettings>` by `<valueName>` and repeated `<controllingFieldValue>` entries by value text.
+
+### Fixed
+- Profile post-retrieve cleanup now removes out-of-scope `<layoutAssignments>` entries when Salesforce retrieve adds managed-package or otherwise untracked layouts.
+
 ## [0.2.0] - 2026-04-30
 
 ### Added
