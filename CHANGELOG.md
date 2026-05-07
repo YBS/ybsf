@@ -9,6 +9,11 @@ Release process and branching conventions are described in [docs/release-process
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-05-07
+
+### Fixed
+- Profile layout assignment cleanup now preserves pseudo-object layouts configured in `processingRules.includePseudoObjects`, such as `CaseClose`, `CaseInteraction`, and `Global`.
+
 ## [0.3.0] - 2026-05-06
 
 ### Added

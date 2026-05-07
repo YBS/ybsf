@@ -1,5 +1,6 @@
 const { isMemberIncluded } = require("./xml-utils");
 const { normalizeActivityFieldName } = require("./field-scope");
+const { normalizePseudoObjectScopes } = require("../../config/pseudo-object-scopes");
 const {
   parseXml,
   elementName,
@@ -151,7 +152,7 @@ function removeOutOfScopeRecordTypeVisibilitiesNodes(root, manifestMembersByType
   return { removedCount };
 }
 
-function removeOutOfScopeLayoutAssignmentsNodes(root, manifestMembersByType) {
+function removeOutOfScopeLayoutAssignmentsNodes(root, manifestMembersByType, includePseudoObjects = []) {
   if (!manifestMembersByType || typeof manifestMembersByType.get !== "function") {
     return { removedCount: 0 };
   }
@@ -160,6 +161,7 @@ function removeOutOfScopeLayoutAssignmentsNodes(root, manifestMembersByType) {
   const hasCustomObjectScope = manifestMembersByType.has("CustomObject");
   const includeAllObjects = objectMembers.includes("*");
   const objectAllowSet = includeAllObjects ? null : new Set(objectMembers);
+  const pseudoObjectAllowSet = new Set(normalizePseudoObjectScopes(includePseudoObjects));
 
   let removedCount = 0;
   for (const node of getDirectChildrenByTag(root, "layoutAssignments")) {
@@ -188,7 +190,8 @@ function removeOutOfScopeLayoutAssignmentsNodes(root, manifestMembersByType) {
       hasCustomObjectScope &&
       !includeAllObjects &&
       objectAllowSet &&
-      !objectAllowSet.has(layoutObjectName)
+      !objectAllowSet.has(layoutObjectName) &&
+      !pseudoObjectAllowSet.has(layoutObjectName)
     ) {
       root.removeChild(node);
       removedCount += 1;
@@ -305,6 +308,9 @@ function applyPermissionPolicies(
 
   const applyProfileScopeCleanup = Boolean(options.applyProfileScopeCleanup);
   const removeProfileInactiveComponents = Boolean(options.removeProfileInactiveComponents);
+  const includePseudoObjects = Array.isArray(options.includePseudoObjects)
+    ? options.includePseudoObjects
+    : [];
   const { removedCount: removedUserPermissions } =
     applyUserPermissionsPolicyNodes(root, userPermissionsPolicy);
   const { removedCount: removedPersonAccountDefaults } =
@@ -315,7 +321,7 @@ function applyPermissionPolicies(
       : { removedCount: 0 };
   const { removedCount: removedLayoutAssignments } =
     applyProfileScopeCleanup
-      ? removeOutOfScopeLayoutAssignmentsNodes(root, manifestMembersByType)
+      ? removeOutOfScopeLayoutAssignmentsNodes(root, manifestMembersByType, includePseudoObjects)
       : { removedCount: 0 };
   const { removedCount: removedObjectScopedFieldPermissions } =
     removeOutOfScopeFieldPermissionNodes(root, manifestMembersByType);

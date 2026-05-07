@@ -38,6 +38,12 @@ async function runProfilesTransform({ config, manifestMembersByType, forceAppDir
       : { mode: "all", members: [] };
   const excludedStandardFields = new Set(config.processingRules.excludeStandardFields || []);
   const optionalProcessing = resolveOptionalProcessing(config);
+  const includePseudoObjects =
+    config &&
+    config.processingRules &&
+    Array.isArray(config.processingRules.includePseudoObjects)
+      ? config.processingRules.includePseudoObjects
+      : [];
 
   const members = manifestMembersByType.get("Profile") || [];
   const includeAll = members.includes("*");
@@ -62,6 +68,7 @@ async function runProfilesTransform({ config, manifestMembersByType, forceAppDir
       excludedStandardFields,
       {
         applyProfileScopeCleanup: true,
+        includePseudoObjects,
         removeProfileInactiveComponents: optionalProcessing.removeProfileInactiveComponents,
       }
     );

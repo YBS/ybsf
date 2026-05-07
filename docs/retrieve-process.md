@@ -53,7 +53,7 @@ These required transforms are always on because they restore manifest parity.
 
 ## Always-On Normalization
 In addition to object cleanup, the pipeline always applies the normalization needed to keep retrieved metadata consistent with config scope:
-- permission set and profile cleanup tied to object scope, layout scope, record type scope, field scope, and user-permission policy
+- permission set and profile cleanup tied to object scope, pseudo-object scope, layout scope, record type scope, field scope, and user-permission policy
 - record type picklist cleanup for excluded custom fields and excluded standard fields
 - deterministic XML formatting and ordering
 

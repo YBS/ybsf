@@ -47,3 +47,81 @@ test("profile cleanup removes layout assignments outside layout and object scope
   assert.doesNotMatch(result.cleaned, /Website Alternate Layout/);
   assert.doesNotMatch(result.cleaned, /Website__c\.Obsolete/);
 });
+
+test("profile cleanup keeps layout assignments for configured pseudo objects", () => {
+  const xml = [
+    '<Profile xmlns="http://soap.sforce.com/2006/04/metadata">',
+    "    <layoutAssignments>",
+    "        <layout>Case-Customer Case Layout</layout>",
+    "    </layoutAssignments>",
+    "    <layoutAssignments>",
+    "        <layout>CaseClose-Close Case Layout</layout>",
+    "    </layoutAssignments>",
+    "    <layoutAssignments>",
+    "        <layout>CaseClose-Close Case Layout</layout>",
+    "        <recordType>Case.Default_Case</recordType>",
+    "    </layoutAssignments>",
+    "    <layoutAssignments>",
+    "        <layout>CaseInteraction-Case Feed Layout</layout>",
+    "    </layoutAssignments>",
+    "    <layoutAssignments>",
+    "        <layout>Global-Global Layout</layout>",
+    "    </layoutAssignments>",
+    "    <layoutAssignments>",
+    "        <layout>conference360__Event__c-conference360__Event Layout</layout>",
+    "    </layoutAssignments>",
+    "</Profile>",
+    "",
+  ].join("\n");
+  const manifestMembersByType = new Map([
+    ["CustomObject", ["Case"]],
+    ["RecordType", ["Case.Default_Case"]],
+  ]);
+
+  const result = applyPermissionPolicies(
+    xml,
+    { mode: "all", members: [] },
+    manifestMembersByType,
+    new Set(),
+    {
+      applyProfileScopeCleanup: true,
+      includePseudoObjects: ["CaseClose", "CaseInteraction", "Global"],
+    }
+  );
+
+  assert.equal(result.removedLayoutAssignments, 1);
+  assert.match(result.cleaned, /Case-Customer Case Layout/);
+  assert.match(result.cleaned, /CaseClose-Close Case Layout/);
+  assert.match(result.cleaned, /Case\.Default_Case/);
+  assert.match(result.cleaned, /CaseInteraction-Case Feed Layout/);
+  assert.match(result.cleaned, /Global-Global Layout/);
+  assert.doesNotMatch(result.cleaned, /conference360__Event__c/);
+});
+
+test("profile cleanup removes pseudo object layout assignments when pseudo object is not configured", () => {
+  const xml = [
+    '<Profile xmlns="http://soap.sforce.com/2006/04/metadata">',
+    "    <layoutAssignments>",
+    "        <layout>CaseClose-Close Case Layout</layout>",
+    "    </layoutAssignments>",
+    "</Profile>",
+    "",
+  ].join("\n");
+  const manifestMembersByType = new Map([
+    ["CustomObject", ["Case"]],
+  ]);
+
+  const result = applyPermissionPolicies(
+    xml,
+    { mode: "all", members: [] },
+    manifestMembersByType,
+    new Set(),
+    {
+      applyProfileScopeCleanup: true,
+      includePseudoObjects: ["CaseInteraction", "Global"],
+    }
+  );
+
+  assert.equal(result.removedLayoutAssignments, 1);
+  assert.doesNotMatch(result.cleaned, /CaseClose-Close Case Layout/);
+});
