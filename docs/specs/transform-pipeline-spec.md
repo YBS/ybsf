@@ -112,6 +112,8 @@ Run transforms in this order:
   - remove entries for layouts outside manifest `Layout` scope;
   - remove entries for objects outside manifest `CustomObject` scope, while treating `processingRules.includePseudoObjects` as in-scope pseudo-object layout prefixes;
   - remove entries whose record type is outside manifest `RecordType` scope.
+- Profile `flowAccesses` filtering rules:
+  - remove entries for flows outside manifest `Flow` scope.
 - Optional picklist dependency sorting:
   - when `sortPicklistDependencies` is `true`, sort `Picklist` and `MultiselectPicklist` field `valueSettings` by `valueName`;
   - sort repeated `controllingFieldValue` entries inside each `valueSettings` by text value.
