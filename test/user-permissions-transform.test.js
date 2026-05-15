@@ -125,3 +125,34 @@ test("profile cleanup removes pseudo object layout assignments when pseudo objec
   assert.equal(result.removedLayoutAssignments, 1);
   assert.doesNotMatch(result.cleaned, /CaseClose-Close Case Layout/);
 });
+
+test("profile cleanup removes flow accesses outside flow scope", () => {
+  const xml = [
+    '<Profile xmlns="http://soap.sforce.com/2006/04/metadata">',
+    "    <flowAccesses>",
+    "        <enabled>false</enabled>",
+    "        <flow>sfdc_default_ReportExport_Protection_Flow</flow>",
+    "    </flowAccesses>",
+    "    <flowAccesses>",
+    "        <enabled>true</enabled>",
+    "        <flow>Included_Flow</flow>",
+    "    </flowAccesses>",
+    "</Profile>",
+    "",
+  ].join("\n");
+  const manifestMembersByType = new Map([
+    ["Flow", ["Included_Flow"]],
+  ]);
+
+  const result = applyPermissionPolicies(
+    xml,
+    { mode: "all", members: [] },
+    manifestMembersByType,
+    new Set(),
+    { applyProfileScopeCleanup: true }
+  );
+
+  assert.equal(result.removedFlowAccesses, 1);
+  assert.match(result.cleaned, /Included_Flow/);
+  assert.doesNotMatch(result.cleaned, /sfdc_default_ReportExport_Protection_Flow/);
+});

@@ -152,6 +152,21 @@ function removeOutOfScopeRecordTypeVisibilitiesNodes(root, manifestMembersByType
   return { removedCount };
 }
 
+function removeOutOfScopeFlowAccessesNodes(root, manifestMembersByType) {
+  let removedCount = 0;
+  for (const node of getDirectChildrenByTag(root, "flowAccesses")) {
+    const flowName = getFirstChildText(node, "flow");
+    if (!flowName) {
+      continue;
+    }
+    if (!isMemberIncluded(manifestMembersByType, "Flow", flowName)) {
+      root.removeChild(node);
+      removedCount += 1;
+    }
+  }
+  return { removedCount };
+}
+
 function removeOutOfScopeLayoutAssignmentsNodes(root, manifestMembersByType, includePseudoObjects = []) {
   if (!manifestMembersByType || typeof manifestMembersByType.get !== "function") {
     return { removedCount: 0 };
@@ -301,6 +316,7 @@ function applyPermissionPolicies(
       removedUserPermissions: 0,
       removedRecordTypeVisibilities: 0,
       removedLayoutAssignments: 0,
+      removedFlowAccesses: 0,
       removedFieldPermissions: 0,
       changed: false,
     };
@@ -323,6 +339,10 @@ function applyPermissionPolicies(
     applyProfileScopeCleanup
       ? removeOutOfScopeLayoutAssignmentsNodes(root, manifestMembersByType, includePseudoObjects)
       : { removedCount: 0 };
+  const { removedCount: removedFlowAccesses } =
+    applyProfileScopeCleanup
+      ? removeOutOfScopeFlowAccessesNodes(root, manifestMembersByType)
+      : { removedCount: 0 };
   const { removedCount: removedObjectScopedFieldPermissions } =
     removeOutOfScopeFieldPermissionNodes(root, manifestMembersByType);
   const { removedCount: removedExplicitStandardFieldPermissions } =
@@ -336,6 +356,7 @@ function applyPermissionPolicies(
     removedPersonAccountDefaults +
     removedRecordTypeVisibilities +
     removedLayoutAssignments +
+    removedFlowAccesses +
     removedObjectScopedFieldPermissions +
     removedExplicitStandardFieldPermissions +
     removedInactiveProfileComponents;
@@ -346,6 +367,7 @@ function applyPermissionPolicies(
     removedUserPermissions,
     removedRecordTypeVisibilities,
     removedLayoutAssignments,
+    removedFlowAccesses,
     removedFieldPermissions: removedObjectScopedFieldPermissions + removedExplicitStandardFieldPermissions,
     changed: cleaned !== originalXml,
   };

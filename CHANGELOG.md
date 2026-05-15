@@ -9,6 +9,11 @@ Release process and branching conventions are described in [docs/release-process
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-05-14
+
+### Fixed
+- Profile cleanup now removes out-of-scope `<flowAccesses>` entries when Salesforce retrieve adds access entries for flows excluded from the manifest.
+
 ## [0.3.1] - 2026-05-07
 
 ### Fixed
